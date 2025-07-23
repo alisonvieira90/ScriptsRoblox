@@ -1,14 +1,13 @@
 -- by nome698 for PIML
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
 -- Criar GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "TpBaseGUI"
-screenGui.Parent = player:WaitForChild("PlayerGui")
 screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
 -- Criar botão
 local button = Instance.new("TextButton")
@@ -20,43 +19,45 @@ button.TextColor3 = Color3.new(1, 1, 1)
 button.Text = "TpBase"
 button.Font = Enum.Font.GothamBold
 button.TextSize = 16
-button.Parent = screenGui
 button.BorderSizePixel = 0
 button.BackgroundTransparency = 0.2
-button.AutoButtonColor = true
+button.Parent = screenGui
 
-local flying = false
+-- Subida segura
+local isMoving = false
+local targetY = 44.399
 
-local function teleportUp()
-	if flying then return end
+button.MouseButton1Click:Connect(function()
+	if isMoving then return end
 	local character = player.Character or player.CharacterAdded:Wait()
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if not root then return end
+	local root = character:WaitForChild("HumanoidRootPart")
 
-	local targetY = 44.399
-	if math.abs(root.Position.Y - targetY) < 1 then return end
+	if math.abs(root.Position.Y - targetY) < 1 then return end -- já está lá
 
-	flying = true
-	local connection
+	isMoving = true
 
-	connection = RunService.Heartbeat:Connect(function()
+	local bv = Instance.new("BodyVelocity")
+	bv.Name = "TpUpVelocity"
+	bv.MaxForce = Vector3.new(0, math.huge, 0)
+	bv.Velocity = Vector3.new(0, 25, 0)
+	bv.Parent = root
+
+	-- Monitorar subida
+	local heartbeatConn
+	heartbeatConn = game:GetService("RunService").Heartbeat:Connect(function()
 		if not root or not root.Parent then
-			connection:Disconnect()
-			flying = false
+			bv:Destroy()
+			heartbeatConn:Disconnect()
+			isMoving = false
 			return
 		end
 
-		local pos = root.Position
-		if pos.Y >= targetY then
+		if root.Position.Y >= targetY then
+			bv:Destroy()
+			heartbeatConn:Disconnect()
+			isMoving = false
+			-- Para garantir que pare suavemente
 			root.AssemblyLinearVelocity = Vector3.zero
-			connection:Disconnect()
-			flying = false
-			return
 		end
-
-		-- subir suavemente com velocidade
-		root.AssemblyLinearVelocity = Vector3.new(0, 15, 0)
 	end)
-end
-
-button.MouseButton1Click:Connect(teleportUp)
+end)
