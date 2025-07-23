@@ -1,10 +1,8 @@
 -- by nome698 for PIML
 
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local camera = workspace.CurrentCamera
 
 -- Criar GUI
 local screenGui = Instance.new("ScreenGui")
@@ -27,30 +25,38 @@ button.BorderSizePixel = 0
 button.BackgroundTransparency = 0.2
 button.AutoButtonColor = true
 
--- Função para subir
-local function teleportUp()
-	character = player.Character or player.CharacterAdded:Wait()
+local flying = false
 
+local function teleportUp()
+	if flying then return end
+	local character = player.Character or player.CharacterAdded:Wait()
 	local root = character:FindFirstChild("HumanoidRootPart")
 	if not root then return end
 
-	local currentPos = root.Position
 	local targetY = 44.399
+	if math.abs(root.Position.Y - targetY) < 1 then return end
 
-	-- Prevenir spam e já estar lá
-	if math.abs(currentPos.Y - targetY) < 1 then return end
+	flying = true
+	local connection
 
-	local targetPosition = Vector3.new(currentPos.X, targetY, currentPos.Z)
-	local goal = {CFrame = CFrame.new(targetPosition)}
+	connection = RunService.Heartbeat:Connect(function()
+		if not root or not root.Parent then
+			connection:Disconnect()
+			flying = false
+			return
+		end
 
-	local tweenInfo = TweenInfo.new(
-		2, -- duração
-		Enum.EasingStyle.Quad,
-		Enum.EasingDirection.Out
-	)
+		local pos = root.Position
+		if pos.Y >= targetY then
+			root.AssemblyLinearVelocity = Vector3.zero
+			connection:Disconnect()
+			flying = false
+			return
+		end
 
-	local tween = TweenService:Create(root, tweenInfo, goal)
-	tween:Play()
+		-- subir suavemente com velocidade
+		root.AssemblyLinearVelocity = Vector3.new(0, 15, 0)
+	end)
 end
 
 button.MouseButton1Click:Connect(teleportUp)
