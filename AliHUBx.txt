@@ -1,6 +1,5 @@
 -- by nome698 for lsar
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
@@ -11,7 +10,7 @@ gui.Name = "TeleportGui"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- Criar Botão
+-- Criar botão
 local button = Instance.new("TextButton")
 button.Name = "TeleportButton"
 button.Size = UDim2.new(0, 150, 0, 50)
@@ -22,6 +21,9 @@ button.TextColor3 = Color3.new(1, 1, 1)
 button.Font = Enum.Font.GothamBold
 button.TextScaled = true
 button.Text = "TELEPORTAR"
+button.Draggable = true -- permite arrastar
+button.Active = true -- necessário para Draggable
+button.Selectable = true
 button.Parent = gui
 
 -- Borda arredondada
@@ -29,14 +31,14 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 12)
 corner.Parent = button
 
--- Borda RGB
+-- UIStroke (borda RGB)
 local stroke = Instance.new("UIStroke")
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 stroke.Thickness = 3
 stroke.Transparency = 0
 stroke.Parent = button
 
--- Cores RGB piscantes
+-- Cores RGB piscantes (com tempo mais lento)
 local cores = {
 	Color3.fromRGB(0, 170, 255),    -- Azul
 	Color3.fromRGB(255, 255, 0),    -- Amarelo
@@ -46,48 +48,24 @@ local cores = {
 }
 local corIndex = 1
 
--- Loop de cor da borda
 task.spawn(function()
 	while true do
 		stroke.Color = cores[corIndex]
 		corIndex = corIndex % #cores + 1
-		task.wait(0.25)
+		task.wait(0.6) -- Mais lento
 	end
 end)
 
--- Função de teleportar e descer com Tween
+-- Função para teleportar e deixar o jogador cair
 local function teleportar()
 	local character = player.Character or player.CharacterAdded:Wait()
-	local root = character:WaitForChild("HumanoidRootPart")
+	local root = character:FindFirstChild("HumanoidRootPart")
 
-	-- Teleportar pra cima
-	local teleportHeight = 5000
-	local startPos = root.Position
-	root.CFrame = CFrame.new(startPos.X, teleportHeight, startPos.Z)
-
-	-- Esperar 1 frame
-	RunService.Heartbeat:Wait()
-
-	-- Raycast para detectar a primeira parte embaixo
-	local rayOrigin = root.Position
-	local rayDirection = Vector3.new(0, -10000, 0)
-	local params = RaycastParams.new()
-	params.FilterDescendantsInstances = {character}
-	params.FilterType = Enum.RaycastFilterType.Blacklist
-
-	local result = workspace:Raycast(rayOrigin, rayDirection, params)
-	if result then
-		local targetY = result.Position.Y + 5
-		local targetPos = Vector3.new(startPos.X, targetY, startPos.Z)
-
-		local tween = TweenService:Create(
-			root,
-			TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-			{Position = targetPos}
-		)
-		tween:Play()
+	if root then
+		local startPos = root.Position
+		local teleportHeight = 500 -- altura segura, não vai pro void
+		root.CFrame = CFrame.new(startPos.X, startPos.Y + teleportHeight, startPos.Z)
 	end
 end
 
--- Clique do botão
 button.MouseButton1Click:Connect(teleportar)
