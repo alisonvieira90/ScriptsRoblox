@@ -23,20 +23,26 @@ button.BorderSizePixel = 0
 button.BackgroundTransparency = 0.2
 button.Parent = screenGui
 
--- Lógica de teleport
+-- Teleporte direto
 button.MouseButton1Click:Connect(function()
-	local character = player.Character
-	if not character then return end
+	local character = player.Character or player.CharacterAdded:Wait()
+	local root = character:WaitForChild("HumanoidRootPart")
 
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if not root then return end
+	local posAtual = root.Position
+	local destino = Vector3.new(posAtual.X, 44.399, posAtual.Z)
 
-	local currentPos = root.Position
-	local teleportPos = Vector3.new(currentPos.X, 44.399, currentPos.Z)
+	-- Desativa temporariamente o estado do humanoide (pra evitar cancelamento do teleport)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+	end
 
-	-- Destrói o personagem para evitar anticheat
-	character:BreakJoints()
+	-- TELEPORTA USANDO CFrame (rápido e direto)
+	root.CFrame = CFrame.new(destino)
 
-	-- Quando ele renascer, seta a nova posição
-	player.CharacterAdded:Wait():WaitForChild("HumanoidRootPart").CFrame = CFrame.new(teleportPos)
+	-- Restaura o estado
+	task.wait(0.1)
+	if humanoid then
+		humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+	end
 end)
