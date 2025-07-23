@@ -1,0 +1,56 @@
+-- by nome698 for PIML
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local camera = workspace.CurrentCamera
+
+-- Criar GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "TpBaseGUI"
+screenGui.Parent = player:WaitForChild("PlayerGui")
+screenGui.ResetOnSpawn = false
+
+-- Criar botão
+local button = Instance.new("TextButton")
+button.Name = "TpBase"
+button.Size = UDim2.new(0, 120, 0, 40)
+button.Position = UDim2.new(0, 10, 1, -50) -- canto inferior esquerdo
+button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+button.TextColor3 = Color3.new(1, 1, 1)
+button.Text = "TpBase"
+button.Font = Enum.Font.GothamBold
+button.TextSize = 16
+button.Parent = screenGui
+button.BorderSizePixel = 0
+button.BackgroundTransparency = 0.2
+button.AutoButtonColor = true
+
+-- Função para subir
+local function teleportUp()
+	character = player.Character or player.CharacterAdded:Wait()
+
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+
+	local currentPos = root.Position
+	local targetY = 44.399
+
+	-- Prevenir spam e já estar lá
+	if math.abs(currentPos.Y - targetY) < 1 then return end
+
+	local targetPosition = Vector3.new(currentPos.X, targetY, currentPos.Z)
+	local goal = {CFrame = CFrame.new(targetPosition)}
+
+	local tweenInfo = TweenInfo.new(
+		2, -- duração
+		Enum.EasingStyle.Quad,
+		Enum.EasingDirection.Out
+	)
+
+	local tween = TweenService:Create(root, tweenInfo, goal)
+	tween:Play()
+end
+
+button.MouseButton1Click:Connect(teleportUp)
