@@ -1,48 +1,93 @@
--- by nome698 for PIML
-
+-- by nome698 for lsar
 local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
 local player = Players.LocalPlayer
 
 -- Criar GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TpBaseGUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = player:WaitForChild("PlayerGui")
+local gui = Instance.new("ScreenGui")
+gui.Name = "TeleportGui"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
 
--- Criar botão
+-- Criar Botão
 local button = Instance.new("TextButton")
-button.Name = "TpBase"
-button.Size = UDim2.new(0, 120, 0, 40)
-button.Position = UDim2.new(0, 10, 1, -50) -- canto inferior esquerdo
-button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+button.Name = "TeleportButton"
+button.Size = UDim2.new(0, 150, 0, 50)
+button.Position = UDim2.new(1, -160, 1, -60)
+button.AnchorPoint = Vector2.new(0, 0)
+button.BackgroundColor3 = Color3.new(0, 0, 0)
 button.TextColor3 = Color3.new(1, 1, 1)
-button.Text = "TpBase"
 button.Font = Enum.Font.GothamBold
-button.TextSize = 16
-button.BorderSizePixel = 0
-button.BackgroundTransparency = 0.2
-button.Parent = screenGui
+button.TextScaled = true
+button.Text = "TELEPORTAR"
+button.Parent = gui
 
--- Teleporte direto
-button.MouseButton1Click:Connect(function()
+-- Borda arredondada
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = button
+
+-- Borda RGB
+local stroke = Instance.new("UIStroke")
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stroke.Thickness = 3
+stroke.Transparency = 0
+stroke.Parent = button
+
+-- Cores RGB piscantes
+local cores = {
+	Color3.fromRGB(0, 170, 255),    -- Azul
+	Color3.fromRGB(255, 255, 0),    -- Amarelo
+	Color3.fromRGB(255, 0, 0),      -- Vermelho
+	Color3.fromRGB(170, 0, 255),    -- Roxo
+	Color3.fromRGB(150, 75, 0),     -- Marrom
+}
+local corIndex = 1
+
+-- Loop de cor da borda
+task.spawn(function()
+	while true do
+		stroke.Color = cores[corIndex]
+		corIndex = corIndex % #cores + 1
+		task.wait(0.25)
+	end
+end)
+
+-- Função de teleportar e descer com Tween
+local function teleportar()
 	local character = player.Character or player.CharacterAdded:Wait()
 	local root = character:WaitForChild("HumanoidRootPart")
 
-	local posAtual = root.Position
-	local destino = Vector3.new(posAtual.X, 44.399, posAtual.Z)
+	-- Teleportar pra cima
+	local teleportHeight = 5000
+	local startPos = root.Position
+	root.CFrame = CFrame.new(startPos.X, teleportHeight, startPos.Z)
 
-	-- Desativa temporariamente o estado do humanoide (pra evitar cancelamento do teleport)
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+	-- Esperar 1 frame
+	RunService.Heartbeat:Wait()
+
+	-- Raycast para detectar a primeira parte embaixo
+	local rayOrigin = root.Position
+	local rayDirection = Vector3.new(0, -10000, 0)
+	local params = RaycastParams.new()
+	params.FilterDescendantsInstances = {character}
+	params.FilterType = Enum.RaycastFilterType.Blacklist
+
+	local result = workspace:Raycast(rayOrigin, rayDirection, params)
+	if result then
+		local targetY = result.Position.Y + 5
+		local targetPos = Vector3.new(startPos.X, targetY, startPos.Z)
+
+		local tween = TweenService:Create(
+			root,
+			TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{Position = targetPos}
+		)
+		tween:Play()
 	end
+end
 
-	-- TELEPORTA USANDO CFrame (rápido e direto)
-	root.CFrame = CFrame.new(destino)
-
-	-- Restaura o estado
-	task.wait(0.1)
-	if humanoid then
-		humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-	end
-end)
+-- Clique do botão
+button.MouseButton1Click:Connect(teleportar)
