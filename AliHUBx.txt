@@ -23,41 +23,20 @@ button.BorderSizePixel = 0
 button.BackgroundTransparency = 0.2
 button.Parent = screenGui
 
--- Subida segura
-local isMoving = false
-local targetY = 44.399
-
+-- Lógica de teleport
 button.MouseButton1Click:Connect(function()
-	if isMoving then return end
-	local character = player.Character or player.CharacterAdded:Wait()
-	local root = character:WaitForChild("HumanoidRootPart")
+	local character = player.Character
+	if not character then return end
 
-	if math.abs(root.Position.Y - targetY) < 1 then return end -- já está lá
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
 
-	isMoving = true
+	local currentPos = root.Position
+	local teleportPos = Vector3.new(currentPos.X, 44.399, currentPos.Z)
 
-	local bv = Instance.new("BodyVelocity")
-	bv.Name = "TpUpVelocity"
-	bv.MaxForce = Vector3.new(0, math.huge, 0)
-	bv.Velocity = Vector3.new(0, 25, 0)
-	bv.Parent = root
+	-- Destrói o personagem para evitar anticheat
+	character:BreakJoints()
 
-	-- Monitorar subida
-	local heartbeatConn
-	heartbeatConn = game:GetService("RunService").Heartbeat:Connect(function()
-		if not root or not root.Parent then
-			bv:Destroy()
-			heartbeatConn:Disconnect()
-			isMoving = false
-			return
-		end
-
-		if root.Position.Y >= targetY then
-			bv:Destroy()
-			heartbeatConn:Disconnect()
-			isMoving = false
-			-- Para garantir que pare suavemente
-			root.AssemblyLinearVelocity = Vector3.zero
-		end
-	end)
+	-- Quando ele renascer, seta a nova posição
+	player.CharacterAdded:Wait():WaitForChild("HumanoidRootPart").CFrame = CFrame.new(teleportPos)
 end)
