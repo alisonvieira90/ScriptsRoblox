@@ -21,8 +21,8 @@ button.TextColor3 = Color3.new(1, 1, 1)
 button.Font = Enum.Font.GothamBold
 button.TextScaled = true
 button.Text = "TELEPORTAR"
-button.Draggable = true -- permite arrastar
-button.Active = true -- necessário para Draggable
+button.Draggable = true
+button.Active = true
 button.Selectable = true
 button.Parent = gui
 
@@ -31,14 +31,14 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 12)
 corner.Parent = button
 
--- UIStroke (borda RGB)
+-- Borda RGB
 local stroke = Instance.new("UIStroke")
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 stroke.Thickness = 3
 stroke.Transparency = 0
 stroke.Parent = button
 
--- Cores RGB piscantes (com tempo mais lento)
+-- Cores RGB piscando devagar
 local cores = {
 	Color3.fromRGB(0, 170, 255),    -- Azul
 	Color3.fromRGB(255, 255, 0),    -- Amarelo
@@ -52,19 +52,36 @@ task.spawn(function()
 	while true do
 		stroke.Color = cores[corIndex]
 		corIndex = corIndex % #cores + 1
-		task.wait(0.6) -- Mais lento
+		task.wait(0.6)
 	end
 end)
 
--- Função para teleportar e deixar o jogador cair
+-- Função de teleporte para cima da parte mais próxima
 local function teleportar()
 	local character = player.Character or player.CharacterAdded:Wait()
 	local root = character:FindFirstChild("HumanoidRootPart")
 
 	if root then
-		local startPos = root.Position
-		local teleportHeight = 500 -- altura segura, não vai pro void
-		root.CFrame = CFrame.new(startPos.X, startPos.Y + teleportHeight, startPos.Z)
+		-- Faz Raycast de cima pra baixo a partir de 200 studs acima do player
+		local rayOrigin = root.Position + Vector3.new(0, 200, 0)
+		local rayDirection = Vector3.new(0, -1000, 0)
+
+		local params = RaycastParams.new()
+		params.FilterDescendantsInstances = {character}
+		params.FilterType = Enum.RaycastFilterType.Blacklist
+
+		local result = workspace:Raycast(rayOrigin, rayDirection, params)
+
+		if result then
+			local hitPos = result.Position
+			local alturaExtra = 5 -- pra ficar acima da parte e cair
+			local newY = hitPos.Y + alturaExtra
+			local newPos = Vector3.new(root.Position.X, newY, root.Position.Z)
+
+			root.CFrame = CFrame.new(newPos)
+		else
+			warn("Nenhuma parte detectada abaixo!")
+		end
 	end
 end
 
