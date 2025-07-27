@@ -1,88 +1,261 @@
--- by nome698 for lsar
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local imageId = "rbxassetid://83777934849279"
+local toolName = "Tung Bat"
 
-local player = Players.LocalPlayer
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
 
--- Criar GUI
-local gui = Instance.new("ScreenGui")
-gui.Name = "TeleportGui"
-gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ModMenuGui"
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Criar botão
-local button = Instance.new("TextButton")
-button.Name = "TeleportButton"
-button.Size = UDim2.new(0, 150, 0, 50)
-button.Position = UDim2.new(1, -160, 1, -60)
-button.AnchorPoint = Vector2.new(0, 0)
-button.BackgroundColor3 = Color3.new(0, 0, 0)
-button.TextColor3 = Color3.new(1, 1, 1)
-button.Font = Enum.Font.GothamBold
-button.TextScaled = true
-button.Text = "TELEPORTAR"
-button.Draggable = true
-button.Active = true
-button.Selectable = true
-button.Parent = gui
+local mainButton = Instance.new("ImageButton")
+mainButton.Name = "MainButton"
+mainButton.Size = UDim2.new(0, 70, 0, 70)
+mainButton.Position = UDim2.new(0.1, 0, 0.1, 0)
+mainButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+mainButton.BorderSizePixel = 2
+mainButton.BorderColor3 = Color3.fromRGB(255,0,0)
+mainButton.Image = imageId
+mainButton.Parent = screenGui
+mainButton.Draggable = true
 
--- Borda arredondada
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = button
+local modMenu = Instance.new("Frame")
+modMenu.Name = "ModMenu"
+modMenu.Size = UDim2.new(0, 250, 0, 320)
+modMenu.Position = UDim2.new(0.1, 80, 0.1, 0)
+modMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+modMenu.BorderSizePixel = 2
+modMenu.BorderColor3 = Color3.fromRGB(255,0,0)
+modMenu.Visible = false
+modMenu.Parent = screenGui
 
--- Borda RGB
-local stroke = Instance.new("UIStroke")
-stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-stroke.Thickness = 3
-stroke.Transparency = 0
-stroke.Parent = button
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.Text = "MOD MENU"
+title.Font = Enum.Font.GothamBold
+title.TextColor3 = Color3.fromRGB(255,0,0)
+title.TextSize = 28
+title.Parent = modMenu
 
--- Cores RGB piscando devagar
-local cores = {
-	Color3.fromRGB(0, 170, 255),    -- Azul
-	Color3.fromRGB(255, 255, 0),    -- Amarelo
-	Color3.fromRGB(255, 0, 0),      -- Vermelho
-	Color3.fromRGB(170, 0, 255),    -- Roxo
-	Color3.fromRGB(150, 75, 0),     -- Marrom
-}
-local corIndex = 1
+local dragging = false
+local dragInput, dragStart, startPos
 
-task.spawn(function()
-	while true do
-		stroke.Color = cores[corIndex]
-		corIndex = corIndex % #cores + 1
-		task.wait(0.6)
+modMenu.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = modMenu.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
 	end
 end)
 
--- Função de teleporte para cima da parte mais próxima
-local function teleportar()
-	local character = player.Character or player.CharacterAdded:Wait()
-	local root = character:FindFirstChild("HumanoidRootPart")
-
-	if root then
-		-- Faz Raycast de cima pra baixo a partir de 200 studs acima do player
-		local rayOrigin = root.Position + Vector3.new(0, 200, 0)
-		local rayDirection = Vector3.new(0, -1000, 0)
-
-		local params = RaycastParams.new()
-		params.FilterDescendantsInstances = {character}
-		params.FilterType = Enum.RaycastFilterType.Blacklist
-
-		local result = workspace:Raycast(rayOrigin, rayDirection, params)
-
-		if result then
-			local hitPos = result.Position
-			local alturaExtra = 5 -- pra ficar acima da parte e cair
-			local newY = hitPos.Y + alturaExtra
-			local newPos = Vector3.new(root.Position.X, newY, root.Position.Z)
-
-			root.CFrame = CFrame.new(newPos)
-		else
-			warn("Nenhuma parte detectada abaixo!")
-		end
+modMenu.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = input.Position - dragStart
+		modMenu.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 	end
+end)
+
+local function createToggle(name, ypos)
+	local frame = Instance.new("Frame")
+	frame.BackgroundTransparency = 1
+	frame.Size = UDim2.new(1, -20, 0, 45)
+	frame.Position = UDim2.new(0, 10, 0, ypos)
+	frame.Parent = modMenu
+
+	local button = Instance.new("TextButton")
+	button.Name = name.."Button"
+	button.Size = UDim2.new(0.7, 0, 1, 0)
+	button.Position = UDim2.new(0, 0, 0, 0)
+	button.BackgroundColor3 = Color3.fromRGB(40,0,0)
+	button.TextColor3 = Color3.fromRGB(255,255,255)
+	button.Font = Enum.Font.Gotham
+	button.Text = name
+	button.TextSize = 20
+	button.Parent = frame
+
+	local toggle = Instance.new("TextLabel")
+	toggle.Name = "Toggle"
+	toggle.Size = UDim2.new(0.3, 0, 1, 0)
+	toggle.Position = UDim2.new(0.7, 0, 0, 0)
+	toggle.BackgroundColor3 = Color3.fromRGB(60,0,0)
+	toggle.TextColor3 = Color3.fromRGB(255,0,0)
+	toggle.Font = Enum.Font.GothamBold
+	toggle.Text = "OFF"
+	toggle.TextSize = 18
+	toggle.Parent = frame
+
+	return button, toggle
 end
 
-button.MouseButton1Click:Connect(teleportar)
+local y = 50
+local buttons = {}
+
+buttons.TPWall, buttons.TPWallToggle = createToggle("TP Wall", y)
+buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y+50)
+buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+100)
+buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y+150)
+buttons.TPUP, buttons.TPUPToggle = createToggle("TP UP", y+200)
+
+local toggles = {
+	TPWall = false,
+	Speed = false,
+	Jump = false,
+	AutoHit = false,
+	TPUP = false,
+}
+local connections = {}
+
+buttons.TPWall.MouseButton1Click:Connect(function()
+	toggles.TPWall = not toggles.TPWall
+	buttons.TPWallToggle.Text = toggles.TPWall and "ON" or "OFF"
+	buttons.TPWallToggle.TextColor3 = toggles.TPWall and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+	if toggles.TPWall then
+		local tpGui = Instance.new("ScreenGui", player.PlayerGui)
+		tpGui.Name = "TPWallGui"
+		local tpButton = Instance.new("TextButton", tpGui)
+		tpButton.Size = UDim2.new(0, 80, 0, 30)
+		tpButton.Position = UDim2.new(0.5, -40, 0.7, 0)
+		tpButton.BackgroundColor3 = Color3.fromRGB(40,0,0)
+		tpButton.TextColor3 = Color3.fromRGB(255,255,255)
+		tpButton.Font = Enum.Font.Gotham
+		tpButton.Text = "TP Wall"
+		tpButton.TextSize = 18
+		tpButton.BorderSizePixel = 2
+		tpButton.BorderColor3 = Color3.fromRGB(255,0,0)
+		local function tpForward()
+			local char = player.Character
+			if char and char:FindFirstChild("HumanoidRootPart") then
+				local hrp = char.HumanoidRootPart
+				hrp.CFrame = hrp.CFrame + hrp.CFrame.LookVector * 5
+			end
+		end
+		connections.tpw = tpButton.MouseButton1Click:Connect(tpForward)
+		tpGui.Enabled = true
+
+		connections.tpwClose = buttons.TPWall.MouseButton1Click:Connect(function()
+			tpGui:Destroy()
+			if connections.tpw then connections.tpw:Disconnect() end
+			if connections.tpwClose then connections.tpwClose:Disconnect() end
+		end)
+	else
+		if player.PlayerGui:FindFirstChild("TPWallGui") then
+			player.PlayerGui.TPWallGui:Destroy()
+		end
+		if connections.tpw then connections.tpw:Disconnect() end
+		if connections.tpwClose then connections.tpwClose:Disconnect() end
+	end
+end)
+
+local speedValue = 24
+local normalSpeed = 16
+buttons.Speed.MouseButton1Click:Connect(function()
+	toggles.Speed = not toggles.Speed
+	buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
+	buttons.SpeedToggle.TextColor3 = toggles.Speed and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+	local char = player.Character
+	if not char then return end
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+
+	if toggles.Speed then
+		humanoid.WalkSpeed = speedValue
+	else
+		humanoid.WalkSpeed = normalSpeed
+	end
+end)
+
+local jumpValue = 75
+local normalJump = 50
+buttons.Jump.MouseButton1Click:Connect(function()
+	toggles.Jump = not toggles.Jump
+	buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
+	buttons.JumpToggle.TextColor3 = toggles.Jump and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+	local char = player.Character
+	if not char then return end
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+
+	if toggles.Jump then
+		humanoid.JumpPower = jumpValue
+	else
+		humanoid.JumpPower = normalJump
+	end
+end)
+
+local ahConnection
+buttons.AutoHit.MouseButton1Click:Connect(function()
+	toggles.AutoHit = not toggles.AutoHit
+	buttons.AutoHitToggle.Text = toggles.AutoHit and "ON" or "OFF"
+	buttons.AutoHitToggle.TextColor3 = toggles.AutoHit and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+	if toggles.AutoHit then
+		local tool = player.Backpack:FindFirstChild(toolName) or player.Character and player.Character:FindFirstChild(toolName)
+		if tool then
+			tool.Parent = player.Character
+			ahConnection = game:GetService("RunService").RenderStepped:Connect(function()
+				tool:Activate()
+			end)
+		end
+	else
+		if ahConnection then ahConnection:Disconnect() end
+	end
+end)
+
+buttons.TPUP.MouseButton1Click:Connect(function()
+	toggles.TPUP = not toggles.TPUP
+	buttons.TPUPToggle.Text = toggles.TPUP and "ON" or "OFF"
+	buttons.TPUPToggle.TextColor3 = toggles.TPUP and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+	if toggles.TPUP then
+		local char = player.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			local hrp = char.HumanoidRootPart
+			local tpHeight = 45
+			local newY = math.max(10, hrp.Position.Y + tpHeight)
+			hrp.CFrame = CFrame.new(hrp.Position.X, newY, hrp.Position.Z)
+		end
+		toggles.TPUP = false
+		buttons.TPUPToggle.Text = "OFF"
+		buttons.TPUPToggle.TextColor3 = Color3.fromRGB(255,0,0)
+	end
+end)
+
+mainButton.MouseButton1Click:Connect(function()
+	modMenu.Visible = not modMenu.Visible
+end)
+
+local mbDragging = false
+local mbDragInput, mbDragStart, mbStartPos
+
+mainButton.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		mbDragging = true
+		mbDragStart = input.Position
+		mbStartPos = mainButton.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				mbDragging = false
+			end
+		end)
+	end
+end)
+
+mainButton.InputChanged:Connect(function(input)
+	if mbDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = input.Position - mbDragStart
+		mainButton.Position = UDim2.new(mbStartPos.X.Scale, mbStartPos.X.Offset + delta.X, mbStartPos.Y.Scale, mbStartPos.Y.Offset + delta.Y)
+	end
+end)
+
+player.CharacterAdded:Connect(function(char)
+	wait(1)
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.WalkSpeed = normalSpeed
+		humanoid.JumpPower = normalJump
+	end
+end)
