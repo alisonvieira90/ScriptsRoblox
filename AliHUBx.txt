@@ -1,11 +1,8 @@
 local imageId = "rbxassetid://83777934849279"
 local toolName = "Tung Bat"
-
 local player = game.Players.LocalPlayer
-local mouse = player:GetMouse()
 local runService = game:GetService("RunService")
-
-local baseY = 100 -- AJUSTE para o Y da sua base
+local baseY = 100 -- troque para o Y da sua base
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
@@ -24,7 +21,7 @@ mainButton.Draggable = true
 
 local modMenu = Instance.new("Frame")
 modMenu.Name = "ModMenu"
-modMenu.Size = UDim2.new(0, 250, 0, 320)
+modMenu.Size = UDim2.new(0, 270, 0, 650)
 modMenu.Position = UDim2.new(0.1, 80, 0.1, 0)
 modMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 modMenu.BorderSizePixel = 2
@@ -41,29 +38,6 @@ title.TextColor3 = Color3.fromRGB(255,0,0)
 title.TextSize = 28
 title.Parent = modMenu
 
-local dragging = false
-local dragInput, dragStart, startPos
-
-modMenu.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
-		dragStart = input.Position
-		startPos = modMenu.Position
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
-	end
-end)
-
-modMenu.InputChanged:Connect(function(input)
-	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-		local delta = input.Position - dragStart
-		modMenu.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-	end
-end)
-
 local function createToggle(name, ypos)
 	local frame = Instance.new("Frame")
 	frame.BackgroundTransparency = 1
@@ -79,7 +53,7 @@ local function createToggle(name, ypos)
 	button.TextColor3 = Color3.fromRGB(255,255,255)
 	button.Font = Enum.Font.Gotham
 	button.Text = name
-	button.TextSize = 20
+	button.TextSize = 18
 	button.Parent = frame
 
 	local toggle = Instance.new("TextLabel")
@@ -90,7 +64,7 @@ local function createToggle(name, ypos)
 	toggle.TextColor3 = Color3.fromRGB(255,0,0)
 	toggle.Font = Enum.Font.GothamBold
 	toggle.Text = "OFF"
-	toggle.TextSize = 18
+	toggle.TextSize = 16
 	toggle.Parent = frame
 
 	return button, toggle
@@ -103,17 +77,32 @@ buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y+50)
 buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+100)
 buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y+150)
 buttons.TPUP, buttons.TPUPToggle = createToggle("TP UP", y+200)
+buttons.InfJump, buttons.InfJumpToggle = createToggle("Infinite Jump", y+250)
+buttons.Fly, buttons.FlyToggle = createToggle("Fly (F Key)", y+300)
+buttons.ESP, buttons.ESPToggle = createToggle("ESP Players", y+350)
+buttons.AntiRagdoll, buttons.AntiRagdollToggle = createToggle("Anti RagDoll", y+400)
+buttons.Reset, buttons.ResetToggle = createToggle("Reset Char", y+450)
+buttons.SuperNoclip, buttons.SuperNoclipToggle = createToggle("Super Noclip", y+500)
+buttons.Gravity, buttons.GravityToggle = createToggle("Low Gravity", y+550)
+buttons.Sit, buttons.SitToggle = createToggle("Sit", y+600)
 
-local toggles = {
-	TPWall = false,
-	Speed = false,
-	Jump = false,
-	AutoHit = false,
-	TPUP = false,
-}
+local toggles = {}
+for name, _ in pairs(buttons) do
+	if name:find("Toggle") == nil then
+		toggles[name] = false
+	end
+end
 local connections = {}
 
--- Noclip helpers
+-- Helper
+local function getHumanoid()
+	local char = player.Character
+	if char then
+		return char:FindFirstChildOfClass("Humanoid")
+	end
+end
+
+-- Noclip
 local function setNoclipParts(char, state)
 	for _, part in ipairs(char:GetDescendants()) do
 		if part:IsA("BasePart") then
@@ -122,68 +111,78 @@ local function setNoclipParts(char, state)
 	end
 end
 
--- Travar/destravar corpo (Anchored)
-local function setAnchoredAllParts(char, state)
-	for _, part in ipairs(char:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.Anchored = state
-		end
-	end
-end
-
--- SPEED BOOST
+-- Speed/Jump Boost
 local speedValue = 35
 local normalSpeed = 16
-
--- JUMP BOOST
 local jumpValue = 120
 local normalJump = 50
 
--- Função para aplicar boosts
-local function applyBoosts()
-	local char = player.Character
-	if not char then return end
-	local humanoid = char:FindFirstChildOfClass("Humanoid")
-	if not humanoid then return end
-	-- Speed
-	if toggles.Speed then
-		humanoid.WalkSpeed = speedValue
-	else
-		humanoid.WalkSpeed = normalSpeed
+runService.RenderStepped:Connect(function()
+	local humanoid = getHumanoid()
+	if humanoid then
+		if toggles.Speed then humanoid.WalkSpeed = speedValue else humanoid.WalkSpeed = normalSpeed end
+		if toggles.Jump then humanoid.JumpPower = jumpValue else humanoid.JumpPower = normalJump end
 	end
-	-- Jump
-	if toggles.Jump then
-		humanoid.JumpPower = jumpValue
-	else
-		humanoid.JumpPower = normalJump
-	end
-end
-
--- Sempre mantém boosts (Speed/Jump) ativos
-local function keepBoosts()
-	while true do
-		task.wait(0.5)
-		applyBoosts()
-	end
-end
-
-task.spawn(keepBoosts)
+end)
 
 buttons.Speed.MouseButton1Click:Connect(function()
 	toggles.Speed = not toggles.Speed
 	buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
 	buttons.SpeedToggle.TextColor3 = toggles.Speed and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-	applyBoosts()
 end)
 
 buttons.Jump.MouseButton1Click:Connect(function()
 	toggles.Jump = not toggles.Jump
 	buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
 	buttons.JumpToggle.TextColor3 = toggles.Jump and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-	applyBoosts()
 end)
 
--- TP Wall (teleporta pra frente e trava o corpo Anchored por 1 segundo)
+-- TP UP Step
+local function tpUpStep(targetY)
+	local char = player.Character
+	if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+	local hrp = char.HumanoidRootPart
+	local startY = hrp.Position.Y
+	local steps = 15
+	local diff = (targetY - startY)/steps
+	setNoclipParts(char, true)
+	for i = 1, steps do
+		hrp.CFrame = hrp.CFrame + Vector3.new(0, diff, 0)
+		task.wait(0.04)
+	end
+	task.wait(0.2)
+	setNoclipParts(char, false)
+end
+
+buttons.TPUP.MouseButton1Click:Connect(function()
+	toggles.TPUP = not toggles.TPUP
+	buttons.TPUPToggle.Text = toggles.TPUP and "ON" or "OFF"
+	buttons.TPUPToggle.TextColor3 = toggles.TPUP and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+	if toggles.TPUP then
+		local char = player.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			tpUpStep(baseY)
+		end
+		toggles.TPUP = false
+		buttons.TPUPToggle.Text = "OFF"
+		buttons.TPUPToggle.TextColor3 = Color3.fromRGB(255,0,0)
+	end
+end)
+
+-- TP Wall Step (contorna anticheat)
+local function tpWallStep()
+	local char = player.Character
+	if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+	local hrp = char.HumanoidRootPart
+	local steps = 10
+	local dist = 5
+	local stepSize = dist/steps
+	for i = 1, steps do
+		hrp.CFrame = hrp.CFrame + hrp.CFrame.LookVector * stepSize
+		task.wait(0.03)
+	end
+end
+
 buttons.TPWall.MouseButton1Click:Connect(function()
 	toggles.TPWall = not toggles.TPWall
 	buttons.TPWallToggle.Text = toggles.TPWall and "ON" or "OFF"
@@ -202,19 +201,10 @@ buttons.TPWall.MouseButton1Click:Connect(function()
 		tpButton.BorderSizePixel = 2
 		tpButton.BorderColor3 = Color3.fromRGB(255,0,0)
 		local function tpForward()
-			local char = player.Character
-			if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
-				local hrp = char.HumanoidRootPart
-				hrp.CFrame = hrp.CFrame + hrp.CFrame.LookVector * 5
-				setAnchoredAllParts(char, true)
-				task.wait(1)
-				setAnchoredAllParts(char, false)
-				applyBoosts()
-			end
+			tpWallStep()
 		end
 		connections.tpw = tpButton.MouseButton1Click:Connect(tpForward)
 		tpGui.Enabled = true
-
 		connections.tpwClose = buttons.TPWall.MouseButton1Click:Connect(function()
 			tpGui:Destroy()
 			if connections.tpw then connections.tpw:Disconnect() end
@@ -229,7 +219,179 @@ buttons.TPWall.MouseButton1Click:Connect(function()
 	end
 end)
 
--- AUTO HIT
+-- Infinite Jump
+local infJumpConn = nil
+buttons.InfJump.MouseButton1Click:Connect(function()
+	toggles.InfJump = not toggles.InfJump
+	buttons.InfJumpToggle.Text = toggles.InfJump and "ON" or "OFF"
+	buttons.InfJumpToggle.TextColor3 = toggles.InfJump and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+	if toggles.InfJump and not infJumpConn then
+		infJumpConn = game:GetService("UserInputService").JumpRequest:Connect(function()
+			local humanoid = getHumanoid()
+			if humanoid then
+				humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+			end
+		end)
+	elseif not toggles.InfJump and infJumpConn then
+		infJumpConn:Disconnect()
+		infJumpConn = nil
+	end
+end)
+
+-- Fly (F key)
+local flyConn, flyOn = nil, false
+local function startFly()
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	flyOn = true
+	local bv = Instance.new("BodyVelocity")
+	bv.MaxForce = Vector3.new(1,1,1)*1e9
+	bv.Parent = hrp
+	while flyOn and hrp.Parent do
+		bv.Velocity = Vector3.new(0,0,0)
+		if userinputservice:IsKeyDown(Enum.KeyCode.W) then bv.Velocity = bv.Velocity + workspace.CurrentCamera.CFrame.LookVector * 80 end
+		if userinputservice:IsKeyDown(Enum.KeyCode.S) then bv.Velocity = bv.Velocity - workspace.CurrentCamera.CFrame.LookVector * 80 end
+		if userinputservice:IsKeyDown(Enum.KeyCode.D) then bv.Velocity = bv.Velocity + workspace.CurrentCamera.CFrame.RightVector * 80 end
+		if userinputservice:IsKeyDown(Enum.KeyCode.A) then bv.Velocity = bv.Velocity - workspace.CurrentCamera.CFrame.RightVector * 80 end
+		if userinputservice:IsKeyDown(Enum.KeyCode.Space) then bv.Velocity = bv.Velocity + Vector3.new(0, 80, 0) end
+		if userinputservice:IsKeyDown(Enum.KeyCode.LeftControl) then bv.Velocity = bv.Velocity - Vector3.new(0, 80, 0) end
+		task.wait()
+	end
+	bv:Destroy()
+end
+
+local function stopFly()
+	flyOn = false
+end
+
+local userinputservice = game:GetService("UserInputService")
+buttons.Fly.MouseButton1Click:Connect(function()
+	toggles.Fly = not toggles.Fly
+	buttons.FlyToggle.Text = toggles.Fly and "ON" or "OFF"
+	buttons.FlyToggle.TextColor3 = toggles.Fly and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+end)
+userinputservice.InputBegan:Connect(function(input)
+	if input.KeyCode == Enum.KeyCode.F and toggles.Fly then
+		if not flyOn then
+			startFly()
+		else
+			stopFly()
+		end
+	end
+end)
+
+-- ESP (Player Highlight)
+local highlightTable = {}
+local function setESP(state)
+	for _,v in pairs(highlightTable) do if v then v:Destroy() end end
+	highlightTable = {}
+	if state then
+		for _,plr in pairs(game.Players:GetPlayers()) do
+			if plr ~= player and plr.Character then
+				local h = Instance.new("Highlight", plr.Character)
+				h.FillColor = Color3.fromRGB(255,0,0)
+				h.OutlineColor = Color3.fromRGB(0,0,0)
+				highlightTable[plr] = h
+			end
+		end
+	end
+end
+buttons.ESP.MouseButton1Click:Connect(function()
+	toggles.ESP = not toggles.ESP
+	buttons.ESPToggle.Text = toggles.ESP and "ON" or "OFF"
+	buttons.ESPToggle.TextColor3 = toggles.ESP and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+	setESP(toggles.ESP)
+end)
+game.Players.PlayerAdded:Connect(function(plr)
+	if toggles.ESP then
+		plr.CharacterAdded:Connect(function(char)
+			local h = Instance.new("Highlight", char)
+			h.FillColor = Color3.fromRGB(255,0,0)
+			h.OutlineColor = Color3.fromRGB(0,0,0)
+			highlightTable[plr] = h
+		end)
+	end
+end)
+
+-- Anti RagDoll
+runService.RenderStepped:Connect(function()
+	if toggles.AntiRagdoll then
+		local char = player.Character
+		if char then
+			for _,v in pairs(char:GetDescendants()) do
+				if v:IsA("BodyGyro") or v:IsA("BodyForce") or v:IsA("BallSocketConstraint") then
+					v:Destroy()
+				end
+			end
+		end
+	end
+end)
+buttons.AntiRagdoll.MouseButton1Click:Connect(function()
+	toggles.AntiRagdoll = not toggles.AntiRagdoll
+	buttons.AntiRagdollToggle.Text = toggles.AntiRagdoll and "ON" or "OFF"
+	buttons.AntiRagdollToggle.TextColor3 = toggles.AntiRagdoll and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+end)
+
+-- Reset Char
+buttons.Reset.MouseButton1Click:Connect(function()
+	toggles.Reset = not toggles.Reset
+	buttons.ResetToggle.Text = toggles.Reset and "ON" or "OFF"
+	buttons.ResetToggle.TextColor3 = toggles.Reset and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+	if toggles.Reset then
+		local humanoid = getHumanoid()
+		if humanoid then humanoid.Health = 0 end
+		wait(1)
+		toggles.Reset = false
+		buttons.ResetToggle.Text = "OFF"
+		buttons.ResetToggle.TextColor3 = Color3.fromRGB(255,0,0)
+	end
+end)
+
+-- Super Noclip
+runService.RenderStepped:Connect(function()
+	if toggles.SuperNoclip then
+		local char = player.Character
+		if char then setNoclipParts(char, true) end
+	else
+		local char = player.Character
+		if char then setNoclipParts(char, false) end
+	end
+end)
+buttons.SuperNoclip.MouseButton1Click:Connect(function()
+	toggles.SuperNoclip = not toggles.SuperNoclip
+	buttons.SuperNoclipToggle.Text = toggles.SuperNoclip and "ON" or "OFF"
+	buttons.SuperNoclipToggle.TextColor3 = toggles.SuperNoclip and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+end)
+
+-- Gravity
+buttons.Gravity.MouseButton1Click:Connect(function()
+	toggles.Gravity = not toggles.Gravity
+	buttons.GravityToggle.Text = toggles.Gravity and "ON" or "OFF"
+	buttons.GravityToggle.TextColor3 = toggles.Gravity and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+	if toggles.Gravity then
+		workspace.Gravity = 40
+	else
+		workspace.Gravity = 196.2
+	end
+end)
+
+-- Sit
+buttons.Sit.MouseButton1Click:Connect(function()
+	toggles.Sit = not toggles.Sit
+	buttons.SitToggle.Text = toggles.Sit and "ON" or "OFF"
+	buttons.SitToggle.TextColor3 = toggles.Sit and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+	if toggles.Sit then
+		local humanoid = getHumanoid()
+		if humanoid then humanoid.Sit = true end
+		wait(1)
+		toggles.Sit = false
+		buttons.SitToggle.Text = "OFF"
+		buttons.SitToggle.TextColor3 = Color3.fromRGB(255,0,0)
+	end
+end)
+
+-- Auto Hit
 local ahConnection
 buttons.AutoHit.MouseButton1Click:Connect(function()
 	toggles.AutoHit = not toggles.AutoHit
@@ -248,34 +410,11 @@ buttons.AutoHit.MouseButton1Click:Connect(function()
 	end
 end)
 
--- TP UP (teleporta para cima da base, noclip temporário)
-buttons.TPUP.MouseButton1Click:Connect(function()
-	toggles.TPUP = not toggles.TPUP
-	buttons.TPUPToggle.Text = toggles.TPUP and "ON" or "OFF"
-	buttons.TPUPToggle.TextColor3 = toggles.TPUP and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-	if toggles.TPUP then
-		local char = player.Character
-		if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
-			local hrp = char.HumanoidRootPart
-			hrp.CFrame = CFrame.new(hrp.Position.X, baseY, hrp.Position.Z)
-			setNoclipParts(char, true)
-			task.wait(1.5)
-			setNoclipParts(char, false)
-			applyBoosts()
-		end
-		toggles.TPUP = false
-		buttons.TPUPToggle.Text = "OFF"
-		buttons.TPUPToggle.TextColor3 = Color3.fromRGB(255,0,0)
-	end
-end)
-
 mainButton.MouseButton1Click:Connect(function()
 	modMenu.Visible = not modMenu.Visible
 end)
 
-local mbDragging = false
-local mbDragInput, mbDragStart, mbStartPos
-
+local mbDragging, mbDragStart, mbStartPos
 mainButton.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		mbDragging = true
@@ -296,6 +435,5 @@ mainButton.InputChanged:Connect(function(input)
 end)
 
 player.CharacterAdded:Connect(function(char)
-	wait(1)
-	applyBoosts()
+	task.wait(1)
 end)
