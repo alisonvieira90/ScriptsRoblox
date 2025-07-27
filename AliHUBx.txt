@@ -5,7 +5,7 @@ local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local runService = game:GetService("RunService")
 
-local baseY = 100 
+local baseY = 70 
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
