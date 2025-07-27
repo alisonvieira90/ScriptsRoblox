@@ -21,7 +21,7 @@ mainButton.Draggable = true
 
 local modMenu = Instance.new("Frame")
 modMenu.Name = "ModMenu"
-modMenu.Size = UDim2.new(0, 270, 0, 650)
+modMenu.Size = UDim2.new(0, 250, 0, 420)
 modMenu.Position = UDim2.new(0.1, 80, 0.1, 0)
 modMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 modMenu.BorderSizePixel = 2
@@ -41,7 +41,7 @@ title.Parent = modMenu
 local function createToggle(name, ypos)
 	local frame = Instance.new("Frame")
 	frame.BackgroundTransparency = 1
-	frame.Size = UDim2.new(1, -20, 0, 45)
+	frame.Size = UDim2.new(1, -20, 0, 40)
 	frame.Position = UDim2.new(0, 10, 0, ypos)
 	frame.Parent = modMenu
 
@@ -73,18 +73,15 @@ end
 local y = 50
 local buttons = {}
 buttons.TPWall, buttons.TPWallToggle = createToggle("TP Wall", y)
-buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y+50)
-buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+100)
-buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y+150)
-buttons.TPUP, buttons.TPUPToggle = createToggle("TP UP", y+200)
-buttons.InfJump, buttons.InfJumpToggle = createToggle("Infinite Jump", y+250)
-buttons.Fly, buttons.FlyToggle = createToggle("Fly (F Key)", y+300)
-buttons.ESP, buttons.ESPToggle = createToggle("ESP Players", y+350)
-buttons.AntiRagdoll, buttons.AntiRagdollToggle = createToggle("Anti RagDoll", y+400)
-buttons.Reset, buttons.ResetToggle = createToggle("Reset Char", y+450)
-buttons.SuperNoclip, buttons.SuperNoclipToggle = createToggle("Super Noclip", y+500)
-buttons.Gravity, buttons.GravityToggle = createToggle("Low Gravity", y+550)
-buttons.Sit, buttons.SitToggle = createToggle("Sit", y+600)
+buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y+45)
+buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+90)
+buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y+135)
+buttons.TPUP, buttons.TPUPToggle = createToggle("TP UP", y+180)
+buttons.InfJump, buttons.InfJumpToggle = createToggle("Infinite Jump", y+225)
+buttons.Fly, buttons.FlyToggle = createToggle("Fly (F Key)", y+270)
+buttons.ESP, buttons.ESPToggle = createToggle("ESP Players", y+315)
+buttons.AntiRagdoll, buttons.AntiRagdollToggle = createToggle("Anti RagDoll", y+360)
+buttons.Gravity, buttons.GravityToggle = createToggle("Low Gravity", y+405)
 
 local toggles = {}
 for name, _ in pairs(buttons) do
@@ -94,7 +91,6 @@ for name, _ in pairs(buttons) do
 end
 local connections = {}
 
--- Helper
 local function getHumanoid()
 	local char = player.Character
 	if char then
@@ -102,7 +98,6 @@ local function getHumanoid()
 	end
 end
 
--- Noclip
 local function setNoclipParts(char, state)
 	for _, part in ipairs(char:GetDescendants()) do
 		if part:IsA("BasePart") then
@@ -111,7 +106,6 @@ local function setNoclipParts(char, state)
 	end
 end
 
--- Speed/Jump Boost
 local speedValue = 35
 local normalSpeed = 16
 local jumpValue = 120
@@ -137,7 +131,6 @@ buttons.Jump.MouseButton1Click:Connect(function()
 	buttons.JumpToggle.TextColor3 = toggles.Jump and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
 end)
 
--- TP UP Step
 local function tpUpStep(targetY)
 	local char = player.Character
 	if not char or not char:FindFirstChild("HumanoidRootPart") then return end
@@ -169,7 +162,6 @@ buttons.TPUP.MouseButton1Click:Connect(function()
 	end
 end)
 
--- TP Wall Step (contorna anticheat)
 local function tpWallStep()
 	local char = player.Character
 	if not char or not char:FindFirstChild("HumanoidRootPart") then return end
@@ -219,7 +211,6 @@ buttons.TPWall.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Infinite Jump
 local infJumpConn = nil
 buttons.InfJump.MouseButton1Click:Connect(function()
 	toggles.InfJump = not toggles.InfJump
@@ -238,7 +229,6 @@ buttons.InfJump.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Fly (F key)
 local flyConn, flyOn = nil, false
 local function startFly()
 	local char = player.Character
@@ -281,7 +271,6 @@ userinputservice.InputBegan:Connect(function(input)
 	end
 end)
 
--- ESP (Player Highlight)
 local highlightTable = {}
 local function setESP(state)
 	for _,v in pairs(highlightTable) do if v then v:Destroy() end end
@@ -314,7 +303,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 	end
 end)
 
--- Anti RagDoll
 runService.RenderStepped:Connect(function()
 	if toggles.AntiRagdoll then
 		local char = player.Character
@@ -333,38 +321,6 @@ buttons.AntiRagdoll.MouseButton1Click:Connect(function()
 	buttons.AntiRagdollToggle.TextColor3 = toggles.AntiRagdoll and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
 end)
 
--- Reset Char
-buttons.Reset.MouseButton1Click:Connect(function()
-	toggles.Reset = not toggles.Reset
-	buttons.ResetToggle.Text = toggles.Reset and "ON" or "OFF"
-	buttons.ResetToggle.TextColor3 = toggles.Reset and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-	if toggles.Reset then
-		local humanoid = getHumanoid()
-		if humanoid then humanoid.Health = 0 end
-		wait(1)
-		toggles.Reset = false
-		buttons.ResetToggle.Text = "OFF"
-		buttons.ResetToggle.TextColor3 = Color3.fromRGB(255,0,0)
-	end
-end)
-
--- Super Noclip
-runService.RenderStepped:Connect(function()
-	if toggles.SuperNoclip then
-		local char = player.Character
-		if char then setNoclipParts(char, true) end
-	else
-		local char = player.Character
-		if char then setNoclipParts(char, false) end
-	end
-end)
-buttons.SuperNoclip.MouseButton1Click:Connect(function()
-	toggles.SuperNoclip = not toggles.SuperNoclip
-	buttons.SuperNoclipToggle.Text = toggles.SuperNoclip and "ON" or "OFF"
-	buttons.SuperNoclipToggle.TextColor3 = toggles.SuperNoclip and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-end)
-
--- Gravity
 buttons.Gravity.MouseButton1Click:Connect(function()
 	toggles.Gravity = not toggles.Gravity
 	buttons.GravityToggle.Text = toggles.Gravity and "ON" or "OFF"
@@ -376,22 +332,6 @@ buttons.Gravity.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Sit
-buttons.Sit.MouseButton1Click:Connect(function()
-	toggles.Sit = not toggles.Sit
-	buttons.SitToggle.Text = toggles.Sit and "ON" or "OFF"
-	buttons.SitToggle.TextColor3 = toggles.Sit and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-	if toggles.Sit then
-		local humanoid = getHumanoid()
-		if humanoid then humanoid.Sit = true end
-		wait(1)
-		toggles.Sit = false
-		buttons.SitToggle.Text = "OFF"
-		buttons.SitToggle.TextColor3 = Color3.fromRGB(255,0,0)
-	end
-end)
-
--- Auto Hit
 local ahConnection
 buttons.AutoHit.MouseButton1Click:Connect(function()
 	toggles.AutoHit = not toggles.AutoHit
