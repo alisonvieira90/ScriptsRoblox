@@ -2,7 +2,50 @@ local imageId = "rbxassetid://83777934849279"
 local toolName = "Tung Bat"
 local player = game.Players.LocalPlayer
 local runService = game:GetService("RunService")
-local baseY = 100 -- Troque para o Y da sua base. Exemplo: 100
+local baseY = 100 -- Troque para o Y da sua base
+
+-- Smooth TP Function
+local function smoothTP(targetPos, steps, delay)
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+
+    -- Ativa noclip durante o movimento
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+        end
+    end
+
+    local diff = (targetPos - hrp.Position) / steps
+    for i = 1, steps do
+        hrp.CFrame = hrp.CFrame + diff
+        task.wait(delay)
+    end
+
+    -- Restaura colisão
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = true
+        end
+    end
+end
+
+local function tpWallStealth(dist)
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    local target = hrp.Position + hrp.CFrame.LookVector * dist
+    smoothTP(target, 40, 0.03)
+end
+
+local function tpUpStealth(yAmount)
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    local target = hrp.Position + Vector3.new(0, yAmount, 0)
+    smoothTP(target, 50, 0.02)
+end
 
 local function createModMenu()
     if player.PlayerGui:FindFirstChild("ModMenuGui") then
@@ -137,85 +180,29 @@ local function createModMenu()
         buttons.JumpToggle.TextColor3 = toggles.Jump and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
     end)
 
-    -- TP UP Step
-    local function tpUpStep(targetY)
-        local char = player.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-        local hrp = char.HumanoidRootPart
-        local startY = hrp.Position.Y
-        local steps = 15
-        local diff = (targetY - startY)/steps
-        setNoclipParts(char, true)
-        for i = 1, steps do
-            hrp.CFrame = hrp.CFrame + Vector3.new(0, diff, 0)
-            task.wait(0.04)
-        end
-        task.wait(0.2)
-        setNoclipParts(char, false)
-    end
-
+    -- TP UP Step usando smoothTP
     buttons.TPUP.MouseButton1Click:Connect(function()
         toggles.TPUP = not toggles.TPUP
         buttons.TPUPToggle.Text = toggles.TPUP and "ON" or "OFF"
         buttons.TPUPToggle.TextColor3 = toggles.TPUP and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
         if toggles.TPUP then
-            local char = player.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                tpUpStep(baseY)
-            end
+            tpUpStealth(baseY)
             toggles.TPUP = false
             buttons.TPUPToggle.Text = "OFF"
             buttons.TPUPToggle.TextColor3 = Color3.fromRGB(255,0,0)
         end
     end)
 
-    -- TP Wall Step
-    local function tpWallStep()
-        local char = player.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-        local hrp = char.HumanoidRootPart
-        local steps = 10
-        local dist = 5
-        local stepSize = dist/steps
-        for i = 1, steps do
-            hrp.CFrame = hrp.CFrame + hrp.CFrame.LookVector * stepSize
-            task.wait(0.03)
-        end
-    end
-
+    -- TP Wall usando smoothTP
     buttons.TPWall.MouseButton1Click:Connect(function()
         toggles.TPWall = not toggles.TPWall
         buttons.TPWallToggle.Text = toggles.TPWall and "ON" or "OFF"
         buttons.TPWallToggle.TextColor3 = toggles.TPWall and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
         if toggles.TPWall then
-            local tpGui = Instance.new("ScreenGui", player.PlayerGui)
-            tpGui.Name = "TPWallGui"
-            local tpButton = Instance.new("TextButton", tpGui)
-            tpButton.Size = UDim2.new(0, 80, 0, 30)
-            tpButton.Position = UDim2.new(0.5, -40, 0.7, 0)
-            tpButton.BackgroundColor3 = Color3.fromRGB(40,0,0)
-            tpButton.TextColor3 = Color3.fromRGB(255,255,255)
-            tpButton.Font = Enum.Font.Gotham
-            tpButton.Text = "TP Wall"
-            tpButton.TextSize = 18
-            tpButton.BorderSizePixel = 2
-            tpButton.BorderColor3 = Color3.fromRGB(255,0,0)
-            local function tpForward()
-                tpWallStep()
-            end
-            connections.tpw = tpButton.MouseButton1Click:Connect(tpForward)
-            tpGui.Enabled = true
-            connections.tpwClose = buttons.TPWall.MouseButton1Click:Connect(function()
-                tpGui:Destroy()
-                if connections.tpw then connections.tpw:Disconnect() end
-                if connections.tpwClose then connections.tpwClose:Disconnect() end
-            end)
-        else
-            if player.PlayerGui:FindFirstChild("TPWallGui") then
-                player.PlayerGui.TPWallGui:Destroy()
-            end
-            if connections.tpw then connections.tpw:Disconnect() end
-            if connections.tpwClose then connections.tpwClose:Disconnect() end
+            tpWallStealth(10) -- 10 studs pra frente
+            toggles.TPWall = false
+            buttons.TPWallToggle.Text = "OFF"
+            buttons.TPWallToggle.TextColor3 = Color3.fromRGB(255,0,0)
         end
     end)
 
