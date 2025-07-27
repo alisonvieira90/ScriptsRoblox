@@ -5,8 +5,41 @@ local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local runService = game:GetService("RunService")
 
-local baseY = -502.252
- 
+local baseY = 100 
+local runService = game:GetService("RunService")
+
+local function freezeCharacterAtPosition(char, position, freezeTime)
+	freezeTime = freezeTime or 1
+	for _, part in ipairs(char:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Anchored = true
+		end
+	end
+
+	if char:FindFirstChild("HumanoidRootPart") then
+		char.HumanoidRootPart.CFrame = position
+	end
+
+	local conn
+	conn = runService.RenderStepped:Connect(function()
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			char.HumanoidRootPart.CFrame = position
+		else
+			conn:Disconnect()
+		end
+	end)
+
+	wait(freezeTime)
+
+	for _, part in ipairs(char:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Anchored = false
+		end
+	end
+
+	if conn then conn:Disconnect() end
+end
+
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
@@ -170,21 +203,14 @@ buttons.TPWall.MouseButton1Click:Connect(function()
 			if char and char:FindFirstChild("HumanoidRootPart") then
 				local hrp = char.HumanoidRootPart
 
-				tpCompleted = false  
-				hrp.CFrame = hrp.CFrame + hrp.CFrame.LookVector * 5
-				tpCompleted = true  
+				local targetPos = hrp.CFrame + hrp.CFrame.LookVector * 5
 
-				for _, part in pairs(char:GetChildren()) do
-					if part:IsA("BasePart") then
-						part.CanCollide = false
-						task.wait(1)
-						part.CanCollide = false
-						task.wait(2)
-						tpCompleted = false
-					end
-				end
+				hrp.CFrame = targetPos
+
+				freezeCharacterAtPosition(char, targetPos, 1)
 			end
 		end
+
 
 		connections.tpw = tpButton.MouseButton1Click:Connect(function()
 			if not tpCompleted then
@@ -289,36 +315,18 @@ buttons.TPUP.MouseButton1Click:Connect(function()
 	toggles.TPUP = not toggles.TPUP
 	buttons.TPUPToggle.Text = toggles.TPUP and "ON" or "OFF"
 	buttons.TPUPToggle.TextColor3 = toggles.TPUP and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+
 	if toggles.TPUP then
 		local char = player.Character
 		if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
-			local humanoid = char:FindFirstChildOfClass("Humanoid")
 			local hrp = char.HumanoidRootPart
 
-			local oldWalkSpeed = humanoid.WalkSpeed
-			local oldJumpPower = humanoid.JumpPower
+			local targetPos = CFrame.new(hrp.Position.X, baseY, hrp.Position.Z)
 
-			
-			
+			hrp.CFrame = targetPos
 
-			hrp.CFrame = CFrame.new(hrp.Position.X, baseY, hrp.Position.Z)
+			freezeCharacterAtPosition(char, targetPos, 1)
 
-			for _, part in ipairs(char:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.Anchored = true
-				end
-			end
-
-			wait(1)
-
-			for _, part in ipairs(char:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.Anchored = false
-				end
-			end
-
-			humanoid.WalkSpeed = oldWalkSpeed
-			humanoid.JumpPower = oldJumpPower
 		end
 		toggles.TPUP = false
 		buttons.TPUPToggle.Text = "OFF"
