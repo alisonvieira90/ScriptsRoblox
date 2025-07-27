@@ -113,7 +113,6 @@ local toggles = {
 }
 local connections = {}
 
--- Noclip helpers
 local noclipActive = false
 local noclipConnection = nil
 local function setNoclip(active)
@@ -143,14 +142,15 @@ local function setNoclip(active)
 	end
 end
 
--- TP Wall
 buttons.TPWall.MouseButton1Click:Connect(function()
 	toggles.TPWall = not toggles.TPWall
 	buttons.TPWallToggle.Text = toggles.TPWall and "ON" or "OFF"
 	buttons.TPWallToggle.TextColor3 = toggles.TPWall and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+
 	if toggles.TPWall then
 		local tpGui = Instance.new("ScreenGui", player.PlayerGui)
 		tpGui.Name = "TPWallGui"
+
 		local tpButton = Instance.new("TextButton", tpGui)
 		tpButton.Size = UDim2.new(0, 80, 0, 30)
 		tpButton.Position = UDim2.new(0.5, -40, 0.7, 0)
@@ -161,31 +161,67 @@ buttons.TPWall.MouseButton1Click:Connect(function()
 		tpButton.TextSize = 18
 		tpButton.BorderSizePixel = 2
 		tpButton.BorderColor3 = Color3.fromRGB(255,0,0)
+
+		local tpCompleted = false
+
 		local function tpForward()
 			local char = player.Character
 			if char and char:FindFirstChild("HumanoidRootPart") then
 				local hrp = char.HumanoidRootPart
+
+				tpCompleted = false  
 				hrp.CFrame = hrp.CFrame + hrp.CFrame.LookVector * 5
+				tpCompleted = true  
+
+				for _, part in pairs(char:GetChildren()) do
+					if part:IsA("BasePart") then
+						part.CanCollide = false
+						task.wait(1)
+						part.CanCollide = false
+						task.wait(2)
+						tpCompleted = false
+					end
+				end
 			end
 		end
-		connections.tpw = tpButton.MouseButton1Click:Connect(tpForward)
-		tpGui.Enabled = true
+
+		connections.tpw = tpButton.MouseButton1Click:Connect(function()
+			if not tpCompleted then
+				tpForward()
+			end
+		end)
 
 		connections.tpwClose = buttons.TPWall.MouseButton1Click:Connect(function()
-			tpGui:Destroy()
-			if connections.tpw then connections.tpw:Disconnect() end
-			if connections.tpwClose then connections.tpwClose:Disconnect() end
+			if not toggles.TPWall then
+				if player.PlayerGui:FindFirstChild("TPWallGui") then
+					player.PlayerGui.TPWallGui:Destroy()
+				end
+				if connections.tpw then
+					connections.tpw:Disconnect()
+					connections.tpw = nil
+				end
+				if connections.tpwClose then
+					connections.tpwClose:Disconnect()
+					connections.tpwClose = nil
+				end
+			end
 		end)
+
 	else
 		if player.PlayerGui:FindFirstChild("TPWallGui") then
 			player.PlayerGui.TPWallGui:Destroy()
 		end
-		if connections.tpw then connections.tpw:Disconnect() end
-		if connections.tpwClose then connections.tpwClose:Disconnect() end
+		if connections.tpw then
+			connections.tpw:Disconnect()
+			connections.tpw = nil
+		end
+		if connections.tpwClose then
+			connections.tpwClose:Disconnect()
+			connections.tpwClose = nil
+		end
 	end
 end)
 
--- SPEED BOOST
 local speedValue = 35
 local normalSpeed = 16
 local speedConnection
@@ -209,7 +245,6 @@ buttons.Speed.MouseButton1Click:Connect(function()
 	applySpeed()
 end)
 
--- JUMP BOOST
 local jumpValue = 120
 local normalJump = 50
 local function applyJump()
@@ -231,7 +266,6 @@ buttons.Jump.MouseButton1Click:Connect(function()
 	applyJump()
 end)
 
--- AUTO HIT
 local ahConnection
 buttons.AutoHit.MouseButton1Click:Connect(function()
 	toggles.AutoHit = not toggles.AutoHit
@@ -250,7 +284,6 @@ buttons.AutoHit.MouseButton1Click:Connect(function()
 	end
 end)
 
--- TP UP (teleporta para cima da base, freeze, noclip)
 buttons.TPUP.MouseButton1Click:Connect(function()
 	toggles.TPUP = not toggles.TPUP
 	buttons.TPUPToggle.Text = toggles.TPUP and "ON" or "OFF"
@@ -261,33 +294,37 @@ buttons.TPUP.MouseButton1Click:Connect(function()
 			local humanoid = char:FindFirstChildOfClass("Humanoid")
 			local hrp = char.HumanoidRootPart
 
-			-- Congela
 			local oldWalkSpeed = humanoid.WalkSpeed
-			humanoid.WalkSpeed = 0
-			humanoid.JumpPower = 0
+			local oldJumpPower = humanoid.JumpPower
 
-			-- Noclip on
-			setNoclip(true)
+			
+			
 
-			wait(0.5) -- Freeze 0.5s
-
-			-- Teleporta para cima da base
 			hrp.CFrame = CFrame.new(hrp.Position.X, baseY, hrp.Position.Z)
 
-			wait(1.0) -- Mais 1s de noclip
+			for _, part in ipairs(char:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Anchored = true
+				end
+			end
 
-			-- Noclip off
-			setNoclip(false)
+			wait(1)
 
-			-- Descongela
-			applySpeed()
-			applyJump()
+			for _, part in ipairs(char:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Anchored = false
+				end
+			end
+
+			humanoid.WalkSpeed = oldWalkSpeed
+			humanoid.JumpPower = oldJumpPower
 		end
 		toggles.TPUP = false
 		buttons.TPUPToggle.Text = "OFF"
 		buttons.TPUPToggle.TextColor3 = Color3.fromRGB(255,0,0)
 	end
 end)
+
 
 mainButton.MouseButton1Click:Connect(function()
 	modMenu.Visible = not modMenu.Visible
@@ -315,7 +352,6 @@ mainButton.InputChanged:Connect(function(input)
 	end
 end)
 
--- Mantém boosts ao morrer
 player.CharacterAdded:Connect(function(char)
 	wait(1)
 	applySpeed()
