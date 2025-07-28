@@ -1,3 +1,7 @@
+if game:GetService("CoreGui"):FindFirstChild("ModMenuGui") then
+    game:GetService("CoreGui").ModMenuGui:Destroy()
+end
+
 local imageId = "rbxassetid://83777934849279"
 local toolName = "Tung Bat"
 local player = game.Players.LocalPlayer
@@ -7,6 +11,8 @@ local soundService = game:GetService("SoundService")
 local tweenService = game:GetService("TweenService")
 local userInputService = game:GetService("UserInputService")
 local baseY = 100
+
+print("🎮 Tung Bat Mod Menu Carregado! Press F1 para abrir/fechar.")
 
 local sounds = {
     click = Instance.new("Sound"),
@@ -56,7 +62,7 @@ end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
-screenGui.Parent = player:WaitForChild("PlayerGui")
+screenGui.Parent = game:GetService("CoreGui")
 screenGui.ResetOnSpawn = false
 
 local mainButton = Instance.new("ImageButton")
@@ -254,6 +260,14 @@ mainButton.MouseButton1Click:Connect(function()
     modMenu.Visible = not modMenu.Visible
 end)
 
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.F1 then
+        modMenu.Visible = not modMenu.Visible
+        playSound("click")
+    end
+end)
+
 buttons.TPWall.MouseButton1Click:Connect(function()
     playSound("click")
     toggles.TPWall = not toggles.TPWall
@@ -262,7 +276,7 @@ buttons.TPWall.MouseButton1Click:Connect(function()
     
     if toggles.TPWall then
         playSound("toggle")
-        local tpGui = Instance.new("ScreenGui", player.PlayerGui)
+        local tpGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
         tpGui.Name = "TPWallGui"
         
         local tpButton = Instance.new("TextButton", tpGui)
@@ -299,8 +313,8 @@ buttons.TPWall.MouseButton1Click:Connect(function()
             tpForward()
         end)
     else
-        if player.PlayerGui:FindFirstChild("TPWallGui") then
-            player.PlayerGui.TPWallGui:Destroy()
+        if game:GetService("CoreGui"):FindFirstChild("TPWallGui") then
+            game:GetService("CoreGui").TPWallGui:Destroy()
         end
         if connections.tpw then
             connections.tpw:Disconnect()
@@ -470,8 +484,7 @@ buttons.TPUP.MouseButton1Click:Connect(function()
     end
 end)
 
-player.CharacterAdded:Connect(function()
-    wait(1)
+local function resetConnections()
     if speedConnection then
         speedConnection:Disconnect()
         speedConnection = nil
@@ -480,5 +493,28 @@ player.CharacterAdded:Connect(function()
         bodyVelocity:Destroy()
         bodyVelocity = nil
     end
+    if jumpConnection then
+        jumpConnection:Disconnect()
+        jumpConnection = nil
+    end
+    if autoHitConnection then
+        autoHitConnection:Disconnect()
+        autoHitConnection = nil
+    end
     originalJumpPower = nil
+end
+
+player.CharacterAdded:Connect(function()
+    wait(1)
+    resetConnections()
+    
+    for feature, state in pairs(toggles) do
+        if state then
+            toggles[feature] = false
+            if buttons[feature.."Toggle"] then
+                buttons[feature.."Toggle"].Text = "OFF"
+                buttons[feature.."Toggle"].TextColor3 = Color3.fromRGB(255,0,0)
+            end
+        end
+    end
 end)
