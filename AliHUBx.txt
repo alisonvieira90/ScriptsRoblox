@@ -8,11 +8,8 @@ local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local runService = game:GetService("RunService")
 local soundService = game:GetService("SoundService")
-local tweenService = game:GetService("TweenService")
 local userInputService = game:GetService("UserInputService")
 local baseY = 100
-
-print("🎮 Tung Bat Mod Menu Carregado! Press F1 para abrir/fechar.")
 
 local sounds = {
     click = Instance.new("Sound"),
@@ -38,26 +35,31 @@ local function playSound(soundName)
     end
 end
 
-local function antiCheatBypass(char, targetPosition)
+local function stealthTeleport(char, targetPosition)
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     
     local hrp = char.HumanoidRootPart
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    
     local originalPos = hrp.CFrame
     local direction = (targetPosition.Position - originalPos.Position).Unit
     local distance = (targetPosition.Position - originalPos.Position).Magnitude
     
-    local steps = math.ceil(distance / 3)
-    local stepSize = distance / steps
+    local steps = math.max(8, math.ceil(distance / 1.5))
     
-    for i = 1, steps do
-        local stepPos = originalPos.Position + (direction * (stepSize * i))
-        hrp.CFrame = CFrame.new(stepPos, stepPos + direction)
-        wait(0.03)
-    end
-    
-    hrp.CFrame = targetPosition
+    spawn(function()
+        for i = 1, steps do
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local stepPos = originalPos.Position + (direction * ((distance / steps) * i))
+                hrp.CFrame = CFrame.new(stepPos, stepPos + direction)
+                runService.Heartbeat:Wait()
+                runService.Heartbeat:Wait()
+                runService.Heartbeat:Wait()
+            end
+        end
+        
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            hrp.CFrame = targetPosition
+        end
+    end)
 end
 
 local screenGui = Instance.new("ScreenGui")
@@ -224,13 +226,11 @@ local function createToggle(name, ypos, icon)
     
     button.MouseEnter:Connect(function()
         playSound("hover")
-        local tween = tweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 0, 0)})
-        tween:Play()
+        button.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
     end)
     
     button.MouseLeave:Connect(function()
-        local tween = tweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 0, 0)})
-        tween:Play()
+        button.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
     end)
     
     return button, toggle
@@ -304,7 +304,7 @@ buttons.TPWall.MouseButton1Click:Connect(function()
             if char and char:FindFirstChild("HumanoidRootPart") then
                 local hrp = char.HumanoidRootPart
                 local targetPos = hrp.CFrame + hrp.CFrame.LookVector * 8
-                antiCheatBypass(char, targetPos)
+                stealthTeleport(char, targetPos)
             end
         end
         
@@ -347,7 +347,7 @@ buttons.Speed.MouseButton1Click:Connect(function()
                         bodyVelocity.Parent = hrp
                     end
                     
-                    local moveVector = humanoid.MoveDirection * 50
+                    local moveVector = humanoid.MoveDirection * 55
                     bodyVelocity.Velocity = Vector3.new(moveVector.X, hrp.Velocity.Y, moveVector.Z)
                 else
                     if bodyVelocity then
@@ -389,7 +389,7 @@ buttons.Jump.MouseButton1Click:Connect(function()
                         originalJumpPower = humanoid.JumpPower or 50
                     end
                     
-                    humanoid.JumpPower = 150
+                    humanoid.JumpPower = 120
                     
                     if humanoid.Jump then
                         local bodyVelocity = char.HumanoidRootPart:FindFirstChild("JumpBoost")
@@ -397,10 +397,15 @@ buttons.Jump.MouseButton1Click:Connect(function()
                             bodyVelocity = Instance.new("BodyVelocity")
                             bodyVelocity.Name = "JumpBoost"
                             bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
-                            bodyVelocity.Velocity = Vector3.new(0, 80, 0)
+                            bodyVelocity.Velocity = Vector3.new(0, 70, 0)
                             bodyVelocity.Parent = char.HumanoidRootPart
                             
-                            game:GetService("Debris"):AddItem(bodyVelocity, 0.5)
+                            spawn(function()
+                                wait(0.4)
+                                if bodyVelocity and bodyVelocity.Parent then
+                                    bodyVelocity:Destroy()
+                                end
+                            end)
                         end
                     end
                 end
@@ -447,7 +452,7 @@ buttons.AutoHit.MouseButton1Click:Connect(function()
                             local otherHrp = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
                             if otherHrp then
                                 local distance = (char.HumanoidRootPart.Position - otherHrp.Position).Magnitude
-                                if distance <= 20 then
+                                if distance <= 25 then
                                     tool:Activate()
                                     break
                                 end
@@ -479,7 +484,7 @@ buttons.TPUP.MouseButton1Click:Connect(function()
         if char and char:FindFirstChild("HumanoidRootPart") then
             local hrp = char.HumanoidRootPart
             local newPos = hrp.CFrame + Vector3.new(0, baseY, 0)
-            antiCheatBypass(char, newPos)
+            stealthTeleport(char, newPos)
         end
     end
 end)
