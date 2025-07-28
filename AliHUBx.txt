@@ -1,59 +1,95 @@
+-- ================================================
+-- ROBLOX MOD MENU APRIMORADO - TUNG BAT V2.0
+-- Correções e melhorias implementadas
+-- ================================================
+
 local imageId = "rbxassetid://83777934849279"
 local toolName = "Tung Bat"
-
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local runService = game:GetService("RunService")
-
+local soundService = game:GetService("SoundService")
+local tweenService = game:GetService("TweenService")
 local baseY = 100
 
+-- ================================================
+-- SISTEMA DE SONS
+-- ================================================
+local sounds = {
+    click = Instance.new("Sound"),
+    hover = Instance.new("Sound"),
+    toggle = Instance.new("Sound")
+}
+
+-- Configurar sons
+sounds.click.SoundId = "rbxasset://sounds/button_press.mp3"
+sounds.click.Volume = 0.5
+sounds.click.Parent = soundService
+
+sounds.hover.SoundId = "rbxasset://sounds/button_hover.mp3" 
+sounds.hover.Volume = 0.3
+sounds.hover.Parent = soundService
+
+sounds.toggle.SoundId = "rbxasset://sounds/toggle_on.mp3"
+sounds.toggle.Volume = 0.4
+sounds.toggle.Parent = soundService
+
+-- Função para tocar sons
+local function playSound(soundName)
+    if sounds[soundName] then
+        sounds[soundName]:Play()
+    end
+end
+
+-- ================================================
+-- FUNÇÃO DE CONGELAMENTO MELHORADA
+-- ================================================
 local function freezeCharacterAtPosition(char, position, freezeTime)
     freezeTime = freezeTime or 1
+    
+    -- Congelar todas as partes
     for _, part in ipairs(char:GetDescendants()) do
         if part:IsA("BasePart") then
             part.Anchored = true
         end
     end
-
-    if char:FindFirstChild("HumanoidRootPart") then  
-        char.HumanoidRootPart.CFrame = position  
-    end  
-
-    local conn  
-    conn = runService.RenderStepped:Connect(function()  
-        if char and char:FindFirstChild("HumanoidRootPart") then  
-            char.HumanoidRootPart.CFrame = position  
-        else  
-            conn:Disconnect()  
-        end  
-    end)  
-
-    wait(freezeTime)  
-
-    for _, part in ipairs(char:GetDescendants()) do  
-        if part:IsA("BasePart") then  
-            part.Anchored = false  
-        end  
-    end  
-
+    
+    -- Posicionar personagem
+    if char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = position
+    end
+    
+    -- Manter posição durante o freeze
+    local conn
+    conn = runService.RenderStepped:Connect(function()
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = position
+        else
+            conn:Disconnect()
+        end
+    end)
+    
+    -- Descongelar após o tempo
+    wait(freezeTime)
+    
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Anchored = false
+        end
+    end
+    
     if conn then conn:Disconnect() end
 end
 
-local function tpForward()
-    local char = player.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        local hrp = char.HumanoidRootPart
-        local targetPos = hrp.CFrame + hrp.CFrame.LookVector * 5
-
-        hrp.CFrame = targetPos  
-        freezeCharacterAtPosition(char, targetPos, 1)  
-    end
-end
-
+-- ================================================
+-- INTERFACE PRINCIPAL
+-- ================================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
 screenGui.Parent = player:WaitForChild("PlayerGui")
+screenGui.ResetOnSpawn = false
 
+-- Botão principal com gradiente
 local mainButton = Instance.new("ImageButton")
 mainButton.Name = "MainButton"
 mainButton.Size = UDim2.new(0, 70, 0, 70)
@@ -65,13 +101,25 @@ mainButton.Image = imageId
 mainButton.Parent = screenGui
 mainButton.Draggable = true
 
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 10)
-uiCorner.Parent = mainButton
+-- Gradiente para o botão principal
+local mainButtonGradient = Instance.new("UIGradient")
+mainButtonGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 51, 51)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 102, 102)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 51, 51))
+}
+mainButtonGradient.Rotation = 45
+mainButtonGradient.Parent = mainButton
 
+-- Cantos arredondados
+local mainButtonCorner = Instance.new("UICorner")
+mainButtonCorner.CornerRadius = UDim.new(0, 12)
+mainButtonCorner.Parent = mainButton
+
+-- Menu principal aprimorado
 local modMenu = Instance.new("Frame")
 modMenu.Name = "ModMenu"
-modMenu.Size = UDim2.new(0, 250, 0, 320)
+modMenu.Size = UDim2.new(0, 280, 0, 350)
 modMenu.Position = UDim2.new(0.1, 80, 0.1, 0)
 modMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 modMenu.BorderSizePixel = 2
@@ -79,59 +127,176 @@ modMenu.BorderColor3 = Color3.fromRGB(255, 0, 0)
 modMenu.Visible = false
 modMenu.Parent = screenGui
 
+-- Gradiente do menu
+local menuGradient = Instance.new("UIGradient")
+menuGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(26, 26, 26)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(45, 45, 45)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(26, 26, 26))
+}
+menuGradient.Rotation = 135
+menuGradient.Parent = modMenu
+
+-- Cantos arredondados do menu
+local menuCorner = Instance.new("UICorner")
+menuCorner.CornerRadius = UDim.new(0, 15)
+menuCorner.Parent = modMenu
+
+-- Título aprimorado
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundTransparency = 1
-title.Text = "MOD MENU"
+title.Size = UDim2.new(1, 0, 0, 50)
+title.BackgroundTransparency = 0
+title.BackgroundColor3 = Color3.fromRGB(255, 51, 51)
+title.Text = "🎮 MOD MENU"
 title.Font = Enum.Font.GothamBold
-title.TextColor3 = Color3.fromRGB(255, 0, 0)
-title.TextSize = 28
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 24
 title.Parent = modMenu
 
-local function createToggle(name, ypos)
+-- Gradiente do título
+local titleGradient = Instance.new("UIGradient")
+titleGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 0, 0))
+}
+titleGradient.Rotation = 90
+titleGradient.Parent = title
+
+-- Cantos do título
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 15)
+titleCorner.Parent = title
+
+-- ================================================
+-- SISTEMA DE DRAG MELHORADO
+-- ================================================
+local dragging = false
+local dragInput, dragStart, startPos
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    modMenu.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+modMenu.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = modMenu.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+modMenu.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        updateDrag(input)
+    end
+end)
+
+-- ================================================
+-- FUNÇÃO PARA CRIAR TOGGLES APRIMORADOS
+-- ================================================
+local function createToggle(name, ypos, icon)
     local frame = Instance.new("Frame")
     frame.BackgroundTransparency = 1
     frame.Size = UDim2.new(1, -20, 0, 45)
     frame.Position = UDim2.new(0, 10, 0, ypos)
     frame.Parent = modMenu
-
-    local button = Instance.new("TextButton")  
-    button.Name = name.."Button"  
-    button.Size = UDim2.new(0.7, 0, 1, 0)  
-    button.Position = UDim2.new(0, 0, 0, 0)  
-    button.BackgroundColor3 = Color3.fromRGB(40, 0, 0)  
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)  
-    button.Font = Enum.Font.Gotham  
-    button.Text = name  
-    button.TextSize = 20  
-    button.Parent = frame  
-
-    local toggle = Instance.new("TextLabel")  
-    toggle.Name = "Toggle"  
-    toggle.Size = UDim2.new(0.3, 0, 1, 0)  
-    toggle.Position = UDim2.new(0.7, 0, 0, 0)  
-    toggle.BackgroundColor3 = Color3.fromRGB(60, 0, 0)  
-    toggle.TextColor3 = Color3.fromRGB(255, 0, 0)  
-    toggle.Font = Enum.Font.GothamBold  
-    toggle.Text = "OFF"  
-    toggle.TextSize = 18  
-    toggle.Parent = frame  
-
+    
+    -- Botão principal
+    local button = Instance.new("TextButton")
+    button.Name = name.."Button"
+    button.Size = UDim2.new(0.7, -5, 1, 0)
+    button.Position = UDim2.new(0, 0, 0, 0)
+    button.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.Font = Enum.Font.Gotham
+    button.Text = icon.." "..name
+    button.TextSize = 18
+    button.Parent = frame
+    
+    -- Gradiente do botão
+    local buttonGradient = Instance.new("UIGradient")
+    buttonGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(42, 0, 0)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(77, 0, 0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(42, 0, 0))
+    }
+    buttonGradient.Rotation = 135
+    buttonGradient.Parent = button
+    
+    -- Cantos arredondados
     local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 5)
+    buttonCorner.CornerRadius = UDim.new(0, 8)
     buttonCorner.Parent = button
-
+    
+    -- Toggle switch
+    local toggle = Instance.new("TextLabel")
+    toggle.Name = "Toggle"
+    toggle.Size = UDim2.new(0.3, 0, 1, 0)
+    toggle.Position = UDim2.new(0.7, 5, 0, 0)
+    toggle.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
+    toggle.TextColor3 = Color3.fromRGB(255, 0, 0) 
+    toggle.Font = Enum.Font.GothamBold
+    toggle.Text = "OFF"
+    toggle.TextSize = 16
+    toggle.Parent = frame
+    
+    -- Gradiente do toggle
+    local toggleGradient = Instance.new("UIGradient")
+    toggleGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 0, 0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(90, 0, 0))
+    }
+    toggleGradient.Rotation = 90
+    toggleGradient.Parent = toggle
+    
+    -- Cantos do toggle  
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 8)
+    toggleCorner.Parent = toggle
+    
+    -- Efeitos hover
+    button.MouseEnter:Connect(function()
+        playSound("hover")
+        local tween = tweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 0, 0)})
+        tween:Play()
+    end)
+    
+    button.MouseLeave:Connect(function()
+        local tween = tweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 0, 0)})
+        tween:Play()
+    end)
+    
     return button, toggle
 end
 
-local y = 50
+-- ================================================
+-- CRIAÇÃO DOS BOTÕES
+-- ================================================
+local y = 60
 local buttons = {}
-buttons.TPWall, buttons.TPWallToggle = createToggle("TP Wall", y)
-buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y + 50)
-buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y + 100)
-buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y + 150)
-buttons.TPUP, buttons.TPUPToggle = createToggle("TP UP", y + 200)
 
+buttons.TPWall, buttons.TPWallToggle = createToggle("TP Wall", y, "🚀")
+buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y+50, "⚡")
+buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+100, "🦘")
+buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y+150, "🎯")
+buttons.TPUP, buttons.TPUPToggle = createToggle("TP UP", y+200, "🚀")
+
+-- ================================================
+-- SISTEMA DE TOGGLES
+-- ================================================
 local toggles = {
     TPWall = false,
     Speed = false,
@@ -140,47 +305,304 @@ local toggles = {
     TPUP = false,
 }
 
-local speedValue = 35
-local normalSpeed = 16
-local jumpValue = 120
-local normalJump = 50
+local connections = {}
 
-local function applySpeed()
-    local char = player.Character
-    if not char then return end
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-    if toggles.Speed then
-        humanoid:ChangeState(Enum.HumanoidStateType.Running)
-        humanoid.WalkSpeed = speedValue
+-- ================================================
+-- FUNCIONALIDADE TP WALL (Mantida do original)
+-- ================================================
+buttons.TPWall.MouseButton1Click:Connect(function()
+    playSound("click")
+    toggles.TPWall = not toggles.TPWall
+    buttons.TPWallToggle.Text = toggles.TPWall and "ON" or "OFF"
+    buttons.TPWallToggle.TextColor3 = toggles.TPWall and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+    
+    if toggles.TPWall then
+        playSound("toggle")
+        local tpGui = Instance.new("ScreenGui", player.PlayerGui)
+        tpGui.Name = "TPWallGui"
+        
+        local tpButton = Instance.new("TextButton", tpGui)
+        tpButton.Size = UDim2.new(0, 100, 0, 40)
+        tpButton.Position = UDim2.new(0.5, -50, 0.7, 0)
+        tpButton.BackgroundColor3 = Color3.fromRGB(255, 51, 51)
+        tpButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        tpButton.Font = Enum.Font.GothamBold
+        tpButton.Text = "🚀 TP WALL"
+        tpButton.TextSize = 16
+        
+        -- Estilizar botão TP
+        local tpCorner = Instance.new("UICorner")
+        tpCorner.CornerRadius = UDim.new(0, 10)
+        tpCorner.Parent = tpButton
+        
+        local tpGradient = Instance.new("UIGradient")
+        tpGradient.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 51, 51)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 0, 0))
+        }
+        tpGradient.Parent = tpButton
+        
+        local function tpForward()
+            local char = player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local hrp = char.HumanoidRootPart
+                local targetPos = hrp.CFrame + hrp.CFrame.LookVector * 5
+                hrp.CFrame = targetPos
+                freezeCharacterAtPosition(char, targetPos, 0.5)
+            end
+        end
+        
+        connections.tpw = tpButton.MouseButton1Click:Connect(function()
+            playSound("click")
+            tpForward()
+        end)
     else
-        humanoid.WalkSpeed = normalSpeed
+        if player.PlayerGui:FindFirstChild("TPWallGui") then
+            player.PlayerGui.TPWallGui:Destroy()
+        end
+        if connections.tpw then
+            connections.tpw:Disconnect()
+            connections.tpw = nil
+        end
     end
-end
+end)
 
-local function applyJump()
-    local char = player.Character
-    if not char then return end
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-    if toggles.Jump then
-        humanoid.UseJumpPower = true
-        humanoid.JumpPower = jumpValue
-    else
-        humanoid.JumpPower = normalJump
-    end
-end
+-- ================================================
+-- ================================================
+local speedConnection
+local bodyVelocity
 
 buttons.Speed.MouseButton1Click:Connect(function()
+    playSound("click")
     toggles.Speed = not toggles.Speed
     buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
     buttons.SpeedToggle.TextColor3 = toggles.Speed and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-    applySpeed()
+    
+    if toggles.Speed then
+        playSound("toggle")
+        speedConnection = runService.Heartbeat:Connect(function()
+            local char = player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local hrp = char.HumanoidRootPart
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                
+                if humanoid and humanoid.MoveDirection.Magnitude > 0 then
+                    -- Criar BodyVelocity se não existir
+                    if not bodyVelocity then
+                        bodyVelocity = Instance.new("BodyVelocity")
+                        bodyVelocity.MaxForce = Vector3.new(4000, 0, 4000)
+                        bodyVelocity.Parent = hrp
+                    end
+                    
+                    -- Aplicar velocidade baseada na direção do movimento
+                    local moveVector = humanoid.MoveDirection * 50 -- Velocidade aumentada
+                    bodyVelocity.Velocity = Vector3.new(moveVector.X, hrp.Velocity.Y, moveVector.Z)
+                else
+                    -- Remover BodyVelocity quando parado
+                    if bodyVelocity then
+                        bodyVelocity:Destroy()
+                        bodyVelocity = nil
+                    end
+                end
+            end
+        end)
+    else
+        if speedConnection then
+            speedConnection:Disconnect()
+            speedConnection = nil
+        end
+        if bodyVelocity then
+            bodyVelocity:Destroy()
+            bodyVelocity = nil
+        end
+    end
 end)
 
+-- ================================================
+-- ================================================
+local jumpConnection
+local originalJumpPower
+
 buttons.Jump.MouseButton1Click:Connect(function()
+    playSound("click")
     toggles.Jump = not toggles.Jump
     buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
     buttons.JumpToggle.TextColor3 = toggles.Jump and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-    applyJump()
+    
+    if toggles.Jump then
+        playSound("toggle")
+        jumpConnection = runService.Heartbeat:Connect(function()
+            local char = player.Character
+            if char then
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    -- Salvar JumpPower original
+                    if not originalJumpPower then
+                        originalJumpPower = humanoid.JumpPower or humanoid.JumpHeight or 50
+                    end
+                    
+                    -- Aplicar jump boost
+                    if humanoid.JumpPower then
+                        humanoid.JumpPower = 120 -- Pulo super alto
+                    else
+                        humanoid.JumpHeight = 30 -- Para versões mais novas do Roblox
+                    end
+                end
+            end
+        end)
+    else
+        if jumpConnection then
+            jumpConnection:Disconnect()
+            jumpConnection = nil
+        end
+        
+        -- Restaurar jump power original
+        local char = player.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid and originalJumpPower then
+                if humanoid.JumpPower then
+                    humanoid.JumpPower = originalJumpPower
+                else
+                    humanoid.JumpHeight = originalJumpPower / 4 -- Conversão aproximada
+                end
+            end
+        end
+    end
 end)
+
+-- ================================================
+-- AUTO HIT MELHORADO
+-- ================================================
+local autoHitConnection
+
+buttons.AutoHit.MouseButton1Click:Connect(function()
+    playSound("click")
+    toggles.AutoHit = not toggles.AutoHit
+    buttons.AutoHitToggle.Text = toggles.AutoHit and "ON" or "OFF"
+    buttons.AutoHitToggle.TextColor3 = toggles.AutoHit and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+    
+    if toggles.AutoHit then
+        playSound("toggle")
+        autoHitConnection = runService.Heartbeat:Connect(function()
+            local char = player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local hrp = char.HumanoidRootPart
+                
+                -- Buscar por outros jogadores próximos
+                for _, otherPlayer in pairs(game.Players:GetPlayers()) do
+                    if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        local distance = (hrp.Position - otherPlayer.Character.HumanoidRootPart.Position).Magnitude
+                        
+                        -- Se estiver próximo o suficiente (10 studs)
+                        if distance <= 10 then
+                            -- Simular hit automático
+                            local tool = char:FindFirstChildOfClass("Tool")
+                            if tool and tool:FindFirstChild("Handle") then
+                                -- Ativar ferramenta automaticamente
+                                tool:Activate()
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    else
+        if autoHitConnection then
+            autoHitConnection:Disconnect()
+            autoHitConnection = nil
+        end
+    end
+end)
+
+-- ================================================
+-- TP UP MELHORADO
+-- ================================================
+buttons.TPUP.MouseButton1Click:Connect(function()
+    playSound("click")
+    toggles.TPUP = not toggles.TPUP
+    buttons.TPUPToggle.Text = toggles.TPUP and "ON" or "OFF"
+    buttons.TPUPToggle.TextColor3 = toggles.TPUP and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+    
+    if toggles.TPUP then
+        playSound("toggle")
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local hrp = char.HumanoidRootPart
+            local newPos = hrp.CFrame + Vector3.new(0, 50, 0) -- Teleportar 50 studs para cima
+            hrp.CFrame = newPos
+            
+            -- Criar efeito visual
+            local effect = Instance.new("Explosion")
+            effect.Parent = workspace
+            effect.Position = newPos.Position
+            effect.BlastRadius = 0
+            effect.BlastPressure = 0
+            
+            -- Desativar automaticamente após 2 segundos
+            wait(2)
+            toggles.TPUP = false
+            buttons.TPUPToggle.Text = "OFF"
+            buttons.TPUPToggle.TextColor3 = Color3.fromRGB(255,0,0)
+        end
+    end
+end)
+
+-- ================================================
+-- CONTROLE DE VISIBILIDADE DO MENU
+-- ================================================
+mainButton.MouseButton1Click:Connect(function()
+    playSound("click")
+    modMenu.Visible = not modMenu.Visible
+    
+    -- Animação de entrada/saída
+    if modMenu.Visible then
+        modMenu.Size = UDim2.new(0, 0, 0, 0)
+        local tween = tweenService:Create(modMenu, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 280, 0, 350)})
+        tween:Play()
+    end
+end)
+
+-- ================================================
+-- EFEITOS VISUAIS ADICIONAIS
+-- ================================================
+
+-- Animação do botão principal
+local buttonTween = tweenService:Create(mainButton, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Rotation = 5})
+buttonTween:Play()
+
+-- Efeito de brilho no título
+spawn(function()
+    while true do
+        local glow = tweenService:Create(titleGradient, TweenInfo.new(1, Enum.EasingStyle.Sine), {Offset = Vector2.new(0.5, 0)})
+        glow:Play()
+        glow.Completed:Wait()
+        
+        local resetGlow = tweenService:Create(titleGradient, TweenInfo.new(1, Enum.EasingStyle.Sine), {Offset = Vector2.new(0, 0)})
+        resetGlow:Play()
+        resetGlow.Completed:Wait()
+    end
+end)
+
+-- Footer do menu
+local footer = Instance.new("TextLabel")
+footer.Size = UDim2.new(1, 0, 0, 30)
+footer.Position = UDim2.new(0, 0, 1, -30)
+footer.BackgroundTransparency = 0.8
+footer.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+footer.Text = "🎮 Tung Bat Mod Menu v2.0 - Aprimorado"
+footer.Font = Enum.Font.Gotham
+footer.TextColor3 = Color3.fromRGB(255, 255, 255)
+footer.TextSize = 12
+footer.Parent = modMenu
+
+local footerCorner = Instance.new("UICorner")
+footerCorner.CornerRadius = UDim.new(0, 15)
+footerCorner.Parent = footer
+
+print("🎮 Tung Bat Mod Menu v2.0 carregado com sucesso!")
+print("✅ Speed Boost corrigido com BodyVelocity")
+print("✅ Jump Boost corrigido com JumpPower/JumpHeight")
+print("✅ Efeitos sonoros adicionados")
+print("✅ Interface com gradientes profissionais")
+print("✅ Animações suaves implementadas")
