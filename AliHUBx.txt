@@ -5,41 +5,69 @@ local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local runService = game:GetService("RunService")
 
-local baseY = 100 
-local runService = game:GetService("RunService")
+local baseY = 100
 
 local function freezeCharacterAtPosition(char, position, freezeTime)
-	freezeTime = freezeTime or 1
-	for _, part in ipairs(char:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.Anchored = true
-		end
-	end
-
-	if char:FindFirstChild("HumanoidRootPart") then
-		char.HumanoidRootPart.CFrame = position
-	end
-
-	local conn
-	conn = runService.RenderStepped:Connect(function()
-		if char and char:FindFirstChild("HumanoidRootPart") then
-			char.HumanoidRootPart.CFrame = position
-		else
-			conn:Disconnect()
-		end
-	end)
-
-	wait(freezeTime)
-
-	for _, part in ipairs(char:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.Anchored = false
-		end
-	end
-
-	if conn then conn:Disconnect() end
+freezeTime = freezeTime or 1
+for _, part in ipairs(char:GetDescendants()) do
+if part:IsA("BasePart") then
+part.Anchored = true
+end
 end
 
+if char:FindFirstChild("HumanoidRootPart") then  
+    char.HumanoidRootPart.CFrame = position  
+end  
+
+local conn  
+conn = runService.RenderStepped:Connect(function()  
+    if char and char:FindFirstChild("HumanoidRootPart") then  
+        char.HumanoidRootPart.CFrame = position  
+    else  
+        conn:Disconnect()  
+    end  
+end)  
+
+wait(freezeTime)  
+
+for _, part in ipairs(char:GetDescendants()) do  
+    if part:IsA("BasePart") then  
+        part.Anchored = false  
+    end  
+end  
+
+if conn then conn:Disconnect() end
+
+end
+
+local function tpForward()
+local char = player.Character
+if char and char:FindFirstChild("HumanoidRootPart") then
+local hrp = char.HumanoidRootPart
+local targetPos = hrp.CFrame + hrp.CFrame.LookVector * 5
+
+hrp.CFrame = targetPos  
+
+    freezeCharacterAtPosition(char, targetPos, 1)  
+end
+
+end
+
+local function applySpeed()
+local char = player.Character
+if not char then return end
+local humanoid = char:FindFirstChildOfClass("Humanoid")
+if not humanoid then return end
+humanoid.WalkSpeed = toggles.Speed and speedValue or normalSpeed
+end
+
+local function applyJump()
+local char = player.Character
+if not char then return end
+local humanoid = char:FindFirstChildOfClass("Humanoid")
+if not humanoid then return end
+humanoid.JumpPower = toggles.Jump and jumpValue or normalJump
+end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
@@ -75,294 +103,236 @@ title.TextColor3 = Color3.fromRGB(255,0,0)
 title.TextSize = 28
 title.Parent = modMenu
 
-local dragging = false
-local dragInput, dragStart, startPos
-
-modMenu.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
-		dragStart = input.Position
-		startPos = modMenu.Position
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
-	end
-end)
-
-modMenu.InputChanged:Connect(function(input)
-	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-		local delta = input.Position - dragStart
-		modMenu.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-	end
-end)
-
 local function createToggle(name, ypos)
-	local frame = Instance.new("Frame")
-	frame.BackgroundTransparency = 1
-	frame.Size = UDim2.new(1, -20, 0, 45)
-	frame.Position = UDim2.new(0, 10, 0, ypos)
-	frame.Parent = modMenu
+local frame = Instance.new("Frame")
+frame.BackgroundTransparency = 1
+frame.Size = UDim2.new(1, -20, 0, 45)
+frame.Position = UDim2.new(0, 10, 0, ypos)
+frame.Parent = modMenu
 
-	local button = Instance.new("TextButton")
-	button.Name = name.."Button"
-	button.Size = UDim2.new(0.7, 0, 1, 0)
-	button.Position = UDim2.new(0, 0, 0, 0)
-	button.BackgroundColor3 = Color3.fromRGB(40,0,0)
-	button.TextColor3 = Color3.fromRGB(255,255,255)
-	button.Font = Enum.Font.Gotham
-	button.Text = name
-	button.TextSize = 20
-	button.Parent = frame
+local button = Instance.new("TextButton")  
+button.Name = name.."Button"  
+button.Size = UDim2.new(0.7, 0, 1, 0)  
+button.Position = UDim2.new(0, 0, 0, 0)  
+button.BackgroundColor3 = Color3.fromRGB(40,0,0)  
+button.TextColor3 = Color3.fromRGB(255,255,255)  
+button.Font = Enum.Font.Gotham  
+button.Text = name  
+button.TextSize = 20  
+button.Parent = frame  
 
-	local toggle = Instance.new("TextLabel")
-	toggle.Name = "Toggle"
-	toggle.Size = UDim2.new(0.3, 0, 1, 0)
-	toggle.Position = UDim2.new(0.7, 0, 0, 0)
-	toggle.BackgroundColor3 = Color3.fromRGB(60,0,0)
-	toggle.TextColor3 = Color3.fromRGB(255,0,0)
-	toggle.Font = Enum.Font.GothamBold
-	toggle.Text = "OFF"
-	toggle.TextSize = 18
-	toggle.Parent = frame
+local toggle = Instance.new("TextLabel")  
+toggle.Name = "Toggle"  
+toggle.Size = UDim2.new(0.3, 0, 1, 0)  
+toggle.Position = UDim2.new(0.7, 0, 0, 0)  
+toggle.BackgroundColor3 = Color3.fromRGB(60,0,0)  
+toggle.TextColor3 = Color3.fromRGB(255,0,0)  
+toggle.Font = Enum.Font.GothamBold  
+toggle.Text = "OFF"  
+toggle.TextSize = 18  
+toggle.Parent = frame  
 
-	return button, toggle
+return button, toggle
+
 end
 
 local y = 50
 local buttons = {}
 buttons.TPWall, buttons.TPWallToggle = createToggle("TP Wall", y)
-buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y+50)
-buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+100)
-buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y+150)
-buttons.TPUP, buttons.TPUPToggle = createToggle("TP UP", y+200)
+buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y + 50)
+buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y + 100)
+buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y + 150)
+buttons.TPUP, buttons.TPUPToggle = createToggle("TP UP", y + 200)
 
 local toggles = {
-	TPWall = false,
-	Speed = false,
-	Jump = false,
-	AutoHit = false,
-	TPUP = false,
+TPWall = false,
+Speed = false,
+Jump = false,
+AutoHit = false,
+TPUP = false,
 }
+
 local connections = {}
 
 local noclipActive = false
 local noclipConnection = nil
 local function setNoclip(active)
-	if noclipActive == active then return end
-	noclipActive = active
-	if noclipActive then
-		noclipConnection = runService.Stepped:Connect(function()
-			local char = player.Character
-			if char then
-				for _, part in ipairs(char:GetDescendants()) do
-					if part:IsA("BasePart") and part.CanCollide == true then
-						part.CanCollide = false
-					end
-				end
-			end
-		end)
-	else
-		if noclipConnection then noclipConnection:Disconnect() end
-		local char = player.Character
-		if char then
-			for _, part in ipairs(char:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.CanCollide = true
-				end
-			end
-		end
-	end
+if noclipActive == active then return end
+noclipActive = active
+if noclipActive then
+noclipConnection = runService.Stepped:Connect(function()
+local char = player.Character
+if char then
+for _, part in ipairs(char:GetDescendants()) do
+if part:IsA("BasePart") and part.CanCollide == true then
+part.CanCollide = false
+end
+end
+end
+end)
+else
+if noclipConnection then noclipConnection:Disconnect() end
+local char = player.Character
+if char then
+for _, part in ipairs(char:GetDescendants()) do
+if part:IsA("BasePart") then
+part.CanCollide = true
+end
+end
+end
+end
 end
 
 buttons.TPWall.MouseButton1Click:Connect(function()
-	toggles.TPWall = not toggles.TPWall
-	buttons.TPWallToggle.Text = toggles.TPWall and "ON" or "OFF"
-	buttons.TPWallToggle.TextColor3 = toggles.TPWall and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+toggles.TPWall = not toggles.TPWall
+buttons.TPWallToggle.Text = toggles.TPWall and "ON" or "OFF"
+buttons.TPWallToggle.TextColor3 = toggles.TPWall and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
 
-	if toggles.TPWall then
-		local tpGui = Instance.new("ScreenGui", player.PlayerGui)
-		tpGui.Name = "TPWallGui"
+if toggles.TPWall then  
+    local tpGui = Instance.new("ScreenGui", player.PlayerGui)  
+    tpGui.Name = "TPWallGui"  
 
-		local tpButton = Instance.new("TextButton", tpGui)
-		tpButton.Size = UDim2.new(0, 80, 0, 30)
-		tpButton.Position = UDim2.new(0.5, -40, 0.7, 0)
-		tpButton.BackgroundColor3 = Color3.fromRGB(40,0,0)
-		tpButton.TextColor3 = Color3.fromRGB(255,255,255)
-		tpButton.Font = Enum.Font.Gotham
-		tpButton.Text = "TP Wall"
-		tpButton.TextSize = 18
-		tpButton.BorderSizePixel = 2
-		tpButton.BorderColor3 = Color3.fromRGB(255,0,0)
+    local tpButton = Instance.new("TextButton", tpGui)  
+    tpButton.Size = UDim2.new(0, 80, 0, 30)  
+    tpButton.Position = UDim2.new(0.5, -40, 0.7, 0)  
+    tpButton.BackgroundColor3 = Color3.fromRGB(40,0,0)  
+    tpButton.TextColor3 = Color3.fromRGB(255,255,255)  
+    tpButton.Font = Enum.Font.Gotham  
+    tpButton.Text = "TP Wall"  
+    tpButton.TextSize = 18  
+    tpButton.BorderSizePixel = 2  
+    tpButton.BorderColor3 = Color3.fromRGB(255,0,0)  
 
-		local tpCompleted = false
+    local tpCompleted = false  
 
-		local function tpForward()
-			local char = player.Character
-			if char and char:FindFirstChild("HumanoidRootPart") then
-				local hrp = char.HumanoidRootPart
+    connections.tpw = tpButton.MouseButton1Click:Connect(function()  
+        if not tpCompleted then  
+            tpForward()  
+        end  
+    end)  
 
-				local targetPos = hrp.CFrame + hrp.CFrame.LookVector * 5
+    connections.tpwClose = buttons.TPWall.MouseButton1Click:Connect(function()  
+        if not toggles.TPWall then  
+            if player.PlayerGui:FindFirstChild("TPWallGui") then  
+                player.PlayerGui.TPWallGui:Destroy()  
+            end  
+            if connections.tpw then  
+                connections.tpw:Disconnect()  
+                connections.tpw = nil  
+            end  
+            if connections.tpwClose then  
+                connections.tpwClose:Disconnect()  
+                connections.tpwClose = nil  
+            end  
+        end  
+    end)  
 
-				hrp.CFrame = targetPos
+else  
+    if player.PlayerGui:FindFirstChild("TPWallGui") then  
+        player.PlayerGui.TPWallGui:Destroy()  
+    end  
+    if connections.tpw then  
+        connections.tpw:Disconnect()  
+        connections.tpw = nil  
+    end  
+    if connections.tpwClose then  
+        connections.tpwClose:Disconnect()  
+        connections.tpwClose = nil  
+    end  
+end
 
-				freezeCharacterAtPosition(char, targetPos, 1)
-			end
-		end
-
-
-		connections.tpw = tpButton.MouseButton1Click:Connect(function()
-			if not tpCompleted then
-				tpForward()
-			end
-		end)
-
-		connections.tpwClose = buttons.TPWall.MouseButton1Click:Connect(function()
-			if not toggles.TPWall then
-				if player.PlayerGui:FindFirstChild("TPWallGui") then
-					player.PlayerGui.TPWallGui:Destroy()
-				end
-				if connections.tpw then
-					connections.tpw:Disconnect()
-					connections.tpw = nil
-				end
-				if connections.tpwClose then
-					connections.tpwClose:Disconnect()
-					connections.tpwClose = nil
-				end
-			end
-		end)
-
-	else
-		if player.PlayerGui:FindFirstChild("TPWallGui") then
-			player.PlayerGui.TPWallGui:Destroy()
-		end
-		if connections.tpw then
-			connections.tpw:Disconnect()
-			connections.tpw = nil
-		end
-		if connections.tpwClose then
-			connections.tpwClose:Disconnect()
-			connections.tpwClose = nil
-		end
-	end
 end)
 
 local speedValue = 35
 local normalSpeed = 16
-local speedConnection
-
-local function applySpeed()
-	local char = player.Character
-	if not char then return end
-	local humanoid = char:FindFirstChildOfClass("Humanoid")
-	if not humanoid then return end
-	if toggles.Speed then
-		humanoid.WalkSpeed = speedValue
-	else
-		humanoid.WalkSpeed = normalSpeed
-	end
-end
 
 buttons.Speed.MouseButton1Click:Connect(function()
-	toggles.Speed = not toggles.Speed
-	buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
-	buttons.SpeedToggle.TextColor3 = toggles.Speed and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-	applySpeed()
+toggles.Speed = not toggles.Speed
+buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
+buttons.SpeedToggle.TextColor3 = toggles.Speed and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+applySpeed()
 end)
 
 local jumpValue = 120
 local normalJump = 50
-local function applyJump()
-	local char = player.Character
-	if not char then return end
-	local humanoid = char:FindFirstChildOfClass("Humanoid")
-	if not humanoid then return end
-	if toggles.Jump then
-		humanoid.JumpPower = jumpValue
-	else
-		humanoid.JumpPower = normalJump
-	end
-end
 
 buttons.Jump.MouseButton1Click:Connect(function()
-	toggles.Jump = not toggles.Jump
-	buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
-	buttons.JumpToggle.TextColor3 = toggles.Jump and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-	applyJump()
+toggles.Jump = not toggles.Jump
+buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
+buttons.JumpToggle.TextColor3 = toggles.Jump and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+applyJump()
 end)
 
 local ahConnection
 buttons.AutoHit.MouseButton1Click:Connect(function()
-	toggles.AutoHit = not toggles.AutoHit
-	buttons.AutoHitToggle.Text = toggles.AutoHit and "ON" or "OFF"
-	buttons.AutoHitToggle.TextColor3 = toggles.AutoHit and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-	if toggles.AutoHit then
-		local tool = player.Backpack:FindFirstChild(toolName) or (player.Character and player.Character:FindFirstChild(toolName))
-		if tool then
-			tool.Parent = player.Character
-			ahConnection = runService.RenderStepped:Connect(function()
-				tool:Activate()
-			end)
-		end
-	else
-		if ahConnection then ahConnection:Disconnect() end
-	end
+toggles.AutoHit = not toggles.AutoHit
+buttons.AutoHitToggle.Text = toggles.AutoHit and "ON" or "OFF"
+buttons.AutoHitToggle.TextColor3 = toggles.AutoHit and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+if toggles.AutoHit then
+local tool = player.Backpack:FindFirstChild(toolName) or (player.Character and player.Character:FindFirstChild(toolName))
+if tool then
+tool.Parent = player.Character
+ahConnection = runService.RenderStepped:Connect(function()
+tool:Activate()
+end)
+end
+else
+if ahConnection then ahConnection:Disconnect() end
+end
 end)
 
 buttons.TPUP.MouseButton1Click:Connect(function()
-	toggles.TPUP = not toggles.TPUP
-	buttons.TPUPToggle.Text = toggles.TPUP and "ON" or "OFF"
-	buttons.TPUPToggle.TextColor3 = toggles.TPUP and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+toggles.TPUP = not toggles.TPUP
+buttons.TPUPToggle.Text = toggles.TPUP and "ON" or "OFF"
+buttons.TPUPToggle.TextColor3 = toggles.TPUP and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
 
-	if toggles.TPUP then
-		local char = player.Character
-		if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
-			local hrp = char.HumanoidRootPart
+if toggles.TPUP then  
+    local char = player.Character  
+    if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then  
+        local hrp = char.HumanoidRootPart  
 
-			local targetPos = CFrame.new(hrp.Position.X, baseY, hrp.Position.Z)
+        local targetPos = CFrame.new(hrp.Position.X, baseY, hrp.Position.Z)  
 
-			hrp.CFrame = targetPos
+        hrp.CFrame = targetPos  
 
-			freezeCharacterAtPosition(char, targetPos, 1)
+        freezeCharacterAtPosition(char, targetPos, 1)  
+    end  
+    toggles.TPUP = false  
+    buttons.TPUPToggle.Text = "OFF"  
+    buttons.TPUPToggle.TextColor3 = Color3.fromRGB(255,0,0)  
+end
 
-		end
-		toggles.TPUP = false
-		buttons.TPUPToggle.Text = "OFF"
-		buttons.TPUPToggle.TextColor3 = Color3.fromRGB(255,0,0)
-	end
 end)
 
-
 mainButton.MouseButton1Click:Connect(function()
-	modMenu.Visible = not modMenu.Visible
+modMenu.Visible = not modMenu.Visible
 end)
 
 local mbDragging = false
 local mbDragInput, mbDragStart, mbStartPos
 
 mainButton.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		mbDragging = true
-		mbDragStart = input.Position
-		mbStartPos = mainButton.Position
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				mbDragging = false
-			end
-		end)
-	end
+if input.UserInputType == Enum.UserInputType.MouseButton1 then
+mbDragging = true
+mbDragStart = input.Position
+mbStartPos = mainButton.Position
+input.Changed:Connect(function()
+if input.UserInputState == Enum.UserInputState.End then
+mbDragging = false
+end
+end)
+end
 end)
 mainButton.InputChanged:Connect(function(input)
-	if mbDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-		local delta = input.Position - mbDragStart
-		mainButton.Position = UDim2.new(mbStartPos.X.Scale, mbStartPos.X.Offset + delta.X, mbStartPos.Y.Scale, mbStartPos.Y.Offset + delta.Y)
-	end
+if mbDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+local delta = input.Position - mbDragStart
+mainButton.Position = UDim2.new(mbStartPos.X.Scale, mbStartPos.X.Offset + delta.X, mbStartPos.Y.Scale, mbStartPos.Y.Offset + delta.Y)
+end
 end)
 
 player.CharacterAdded:Connect(function(char)
-	wait(1)
-	applySpeed()
-	applyJump()
+wait(1)
+applySpeed()
+applyJump()
 end)
+
