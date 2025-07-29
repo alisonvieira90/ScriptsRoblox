@@ -182,8 +182,9 @@ local function teleportToBase()
                         if char and char:FindFirstChild("HumanoidRootPart") then
                             local offsetBehind = plotSign.CFrame.LookVector * -1 -- 10 studs atrás
                             local offsetDown = Vector3.new(0, -3, 0) -- 7 studs para baixo
-                            local targetPosition = plotSign.CFrame.Position + offsetBehind + offsetDown
-                            char.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+                           local targetPosition = plotSign.CFrame.Position + Vector3.new(0, -8.953, 0)
+                           char.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+
                             IFtpc = true
                             freezeCharacter(char, 1)
                             IFtpc = false
