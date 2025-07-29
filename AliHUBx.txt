@@ -62,16 +62,20 @@ local function teleportToBase()
                     -- Look for SurfaceGui inside PlotSign
                     local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
                     if surfaceGui then
-                        -- Check TextLabel inside SurfaceGui
-                        for _, child in ipairs(surfaceGui:GetDescendants()) do
-                            if child:IsA("TextLabel") then
-                                local text = child.Text
-                                local expectedText = storedPlayerName .. "'s Base"
-                                
-                                -- Check if text matches exactly: "PlayerName's Base"
-                                if text == expectedText then
-                                    foundBase = plotSign
-                                    return true
+                        -- Look for Frame inside SurfaceGui, then TextLabel inside Frame
+                        for _, frame in ipairs(surfaceGui:GetChildren()) do
+                            if frame:IsA("Frame") then
+                                for _, child in ipairs(frame:GetChildren()) do
+                                    if child:IsA("TextLabel") then
+                                        local text = child.Text
+                                        local expectedText = storedPlayerName .. "'s Base"
+                                        
+                                        -- Check if text matches exactly: "PlayerName's Base"
+                                        if text == expectedText then
+                                            foundBase = plotSign
+                                            return true
+                                        end
+                                    end
                                 end
                             end
                         end
@@ -224,7 +228,7 @@ local function setNoclip(active)
     noclipActive = active
     
     if noclipActive then
-        noclipConnectiono t = runService.Stepped:Connect(function()
+        noclipConnection = runService.Stepped:Connect(function()
             local char = player.Character
             if char then
                 for _, part in ipairs(char:GetDescendants()) do
