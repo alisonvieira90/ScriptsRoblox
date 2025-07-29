@@ -9,8 +9,6 @@ local baseY = 100
 local storedPlayerName = player.DisplayName
 local TpCompletedS = false
 
-print("[DEBUG] Script carregado! Player: " .. player.Name)
-
 local function getCharacterAndHRP()
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart", 5)
@@ -19,7 +17,6 @@ end
 
 local function freezeCharacterAtPosition(char, position, freezeTime)
     freezeTime = freezeTime or 1
-    print("[DEBUG] Freezando personagem...")
     
     for _, part in ipairs(char:GetDescendants()) do
         if part:IsA("BasePart") then
@@ -49,7 +46,6 @@ local function freezeCharacterAtPosition(char, position, freezeTime)
     end
 
     if conn then conn:Disconnect() end
-    print("[DEBUG] Personagem descongelado.")
 end
 
 local function teleportToBase()
@@ -58,16 +54,19 @@ local function teleportToBase()
     
     for _, model in ipairs(workspace:GetChildren()) do
         if model:IsA("Model") then
+            print("[DEBUG] Checando Model: " .. model.Name)
             local plotSign = model:FindFirstChild("PlotSign")
             if plotSign and plotSign:IsA("BasePart") then
+                print("[DEBUG] PlotSign encontrado em " .. model.Name)
                 local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
-                if surfaceGui and surfaceGui:IsA("SurfaceGui") then
+                if surfaceGui then
                     local frame = surfaceGui:FindFirstChild("Frame")
-                    if frame and frame:IsA("Frame") then
+                    if frame then
                         local textLabel = frame:FindFirstChild("TextLabel")
-                        if textLabel and textLabel:IsA("TextLabel") then
+                        if textLabel then
+                            print("[DEBUG] TextLabel encontrado, texto: " .. textLabel.Text)
                             if textLabel.Text == targetBaseName then
-                                print("[DEBUG] Base encontrada!")
+                                print("[DEBUG] Base encontrada! Teleportando...")
                                 TpCompletedS = true
                                 local character, hrp = getCharacterAndHRP()
                                 if hrp then
@@ -76,7 +75,7 @@ local function teleportToBase()
                                         freezeCharacterAtPosition(character, teleportPosition, 1)
                                         TpCompletedS = false
                                     end)
-                                    print("[DEBUG] Teleport realizado com sucesso!")
+                                    print("[DEBUG] Teleport feito com sucesso!")
                                     return
                                 end
                             end
@@ -87,7 +86,7 @@ local function teleportToBase()
         end
     end
     
-    warn("[DEBUG] Base não encontrada: " .. targetBaseName)
+    warn("[DEBUG] Nenhuma base encontrada com o nome: " .. targetBaseName)
 end
 
 local screenGui = Instance.new("ScreenGui")
@@ -296,3 +295,4 @@ end)
 print("[DEBUG] Mod Menu carregado!")
 print("[DEBUG] Player armazenado: " .. storedPlayerName)
 print("[DEBUG] Procurando base: " .. storedPlayerName .. "'s Base")
+
