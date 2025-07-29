@@ -181,7 +181,7 @@ local function teleportToBase()
                         -- Teleporta com offset atrás e para Y = -9.053
                         local char = player.Character
                         if char and char:FindFirstChild("HumanoidRootPart") then
-                     char.HumanoidRootPart.CFrame = plotSign.CFrame * CFrame.new(0, -30, -10)
+                     char.HumanoidRootPart.CFrame = plotSign.CFrame * CFrame.new(0, -20, -10)
                             IFtpc = true
                             freezeCharacter(char, 1)
                             IFtpc = false
