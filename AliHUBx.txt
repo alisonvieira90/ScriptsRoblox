@@ -180,7 +180,8 @@ local function teleportToBase()
                     if textLabel and textLabel.Text == (storedPlayerName .. "'s Base") then
                         local char = player.Character
                         if char and char:FindFirstChild("HumanoidRootPart") then
-                            local targetPosition = plotSign.CFrame.Position + Vector3.new(0, -8.953, 0)
+                            local targetPosition = plotSign.CFrame.Position + Vector3.new(0, -15.853, 0)
+
                             char.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
 
                             IFtpc = true
