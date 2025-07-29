@@ -10,8 +10,8 @@ local runService = game:GetService("RunService")
 
 local baseY = 100
 
--- Store player name when script starts
-local storedPlayerName = player.Name
+-- Store player display name when script starts  
+local storedPlayerName = player.DisplayName
 
 -- Variable to track teleport completion status
 local TpCompletedS = false
@@ -317,5 +317,5 @@ buttons.TPBase.MouseButton1Click:Connect(function()
 end)
 
 print("Mod Menu loaded successfully!")
-print("Player name stored: " .. storedPlayerName)
+print("Player display name stored: " .. storedPlayerName)
 print("Looking for base: " .. storedPlayerName .. "'s Base")
