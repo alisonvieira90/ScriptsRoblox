@@ -88,9 +88,10 @@ local function teleportToBase()
     
     -- Search in workspace
     if searchInDescendants(game.Workspace) and foundBase then
-        -- Get the position of the PlotSign (should be a part)
-        if foundBase:IsA("BasePart") then
-            local teleportPosition = foundBase.CFrame + Vector3.new(0, 5, 0) -- Teleport slightly above
+        -- Get the position of the part that contains the SurfaceGui
+        local targetPart = foundBase
+        if targetPart and targetPart:IsA("BasePart") then
+            local teleportPosition = targetPart.CFrame + Vector3.new(0, 5, 0) -- Teleport slightly above the part
             
             -- Teleport and freeze character
             spawn(function()
@@ -99,7 +100,22 @@ local function teleportToBase()
                 print("Teleported to base successfully!")
             end)
         else
-            warn("PlotSign is not a valid part")
+            -- If PlotSign is not a BasePart, try to find a BasePart parent
+            local parentPart = targetPart.Parent
+            while parentPart and not parentPart:IsA("BasePart") do
+                parentPart = parentPart.Parent
+            end
+            
+            if parentPart and parentPart:IsA("BasePart") then
+                local teleportPosition = parentPart.CFrame + Vector3.new(0, 5, 0)
+                spawn(function()
+                    freezeCharacterAtPosition(char, teleportPosition, 1)
+                    TpCompletedS = true
+                    print("Teleported to base successfully!")
+                end)
+            else
+                warn("Could not find a valid part to teleport to")
+            end
         end
     else
         warn("Could not find base for player: " .. storedPlayerName)
