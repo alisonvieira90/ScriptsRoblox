@@ -165,7 +165,6 @@ local function setNoclip(active)
     end
 end
 
--- Função TP BASE com offset para trás e para baixo
 local function teleportToBase()
     local Plots = workspace:FindFirstChild("Plots")
     if not Plots then return end
@@ -182,8 +181,7 @@ local function teleportToBase()
                         -- Teleporta com offset atrás e abaixo
                         local char = player.Character
                         if char and char:FindFirstChild("HumanoidRootPart") then
-                            local offset = CFrame.new(0, -3, 5)
-                            char.HumanoidRootPart.CFrame = plotSign.CFrame * offset
+                            char.HumanoidRootPart.CFrame = plotSign.CFrame * CFrame.new(0, -3, -5)
                             IFtpc = true
                             freezeCharacter(char, 1)
                             IFtpc = false
@@ -195,6 +193,7 @@ local function teleportToBase()
         end
     end
 end
+
 
 buttons.TPBASE.MouseButton1Click:Connect(function()
     teleportToBase()
