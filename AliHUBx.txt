@@ -1,377 +1,139 @@
-local imageId = "rbxassetid://83777934849279"
-local toolName = "Tung Bat"
+-- Simple client-side script for StarterPlayer > StarterPlayerScripts
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local runService = game:GetService("RunService")
-local baseY = 100
 
 -- Store player name when script starts
 local storedPlayerName = player.Name
 local TpCompletedS = false
 
-local function freezeCharacterAtPosition(char, position, freezeTime)
+-- Simple freeze function
+local function freezeCharacter(char, freezeTime)
     freezeTime = freezeTime or 1
     
-    for _, part in ipairs(char:GetDescendants()) do
+    -- Anchor all parts
+    for _, part in pairs(char:GetChildren()) do
         if part:IsA("BasePart") then
             part.Anchored = true
         end
     end
     
-    if char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = position
-    end
-    
-    local conn
-    conn = runService.RenderStepped:Connect(function()
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.CFrame = position
-        else
-            conn:Disconnect()
-        end
-    end)
-    
+    -- Wait and unfreeze
     wait(freezeTime)
     
-    for _, part in ipairs(char:GetDescendants()) do
+    for _, part in pairs(char:GetChildren()) do
         if part:IsA("BasePart") then
             part.Anchored = false
         end
     end
-    
-    if conn then conn:Disconnect() end
 end
 
--- Function to find and teleport to player's base
+-- Function to find and teleport to player's base  
 local function teleportToBase()
     TpCompletedS = false
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then
-        warn("Character or HumanoidRootPart not found")
+        print("Character not found")
         return
     end
     
-    -- Search for SurfaceGui objects inside PlotSign models
-    local foundBase = nil
-    local function searchInDescendants(parent)
-        print("Starting search in workspace...")
-        for _, descendant in ipairs(parent:GetDescendants()) do
-            -- Look for models that contain PlotSign
-            if descendant:IsA("Model") then
-                local plotSign = descendant:FindFirstChild("PlotSign")
-                if plotSign then
-                    print("Found PlotSign in model:", descendant.Name)
-                    -- Look for SurfaceGui inside PlotSign
-                    local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
-                    if surfaceGui then
-                        print("Found SurfaceGui in PlotSign")
-                        -- Look for Frame inside SurfaceGui, then TextLabel inside Frame
-                        for _, frame in ipairs(surfaceGui:GetChildren()) do
-                            if frame:IsA("Frame") then
-                                print("Found Frame in SurfaceGui")
-                                for _, child in ipairs(frame:GetChildren()) do
-                                    if child:IsA("TextLabel") then
-                                        local text = child.Text
-                                        local expectedText = storedPlayerName .. "'s Base"
-                                        print("Found TextLabel with text:", text)
-                                        print("Expected text:", expectedText)
+    print("Starting search for base...")
+    print("Looking for:", storedPlayerName .. "'s Base")
+    
+    -- Search through all descendants in workspace
+    for _, obj in pairs(game.Workspace:GetDescendants()) do
+        -- Look for Models
+        if obj:IsA("Model") then
+            -- Check if model has PlotSign
+            local plotSign = obj:FindFirstChild("PlotSign")
+            if plotSign then
+                print("Found PlotSign in:", obj.Name)
+                
+                -- Check for SurfaceGui in PlotSign
+                local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
+                if surfaceGui then
+                    print("Found SurfaceGui")
+                    
+                    -- Look through all children for Frame
+                    for _, child in pairs(surfaceGui:GetChildren()) do
+                        if child:IsA("Frame") then
+                            print("Found Frame")
+                            
+                            -- Look for TextLabel in Frame
+                            for _, label in pairs(child:GetChildren()) do
+                                if label:IsA("TextLabel") then
+                                    local text = label.Text
+                                    local expectedText = storedPlayerName .. "'s Base"
+                                    
+                                    print("TextLabel text:", text)
+                                    print("Expected:", expectedText)
+                                    
+                                    if text == expectedText then
+                                        print("Match found! Teleporting...")
                                         
-                                        -- Check if text matches exactly: "PlayerName's Base"
-                                        if text == expectedText then
-                                            print("Text matches! Found base for player")
-                                            foundBase = plotSign
-                                            return true
+                                        -- Teleport to PlotSign position
+                                        if plotSign:IsA("BasePart") then
+                                            char.HumanoidRootPart.CFrame = plotSign.CFrame + Vector3.new(0, 5, 0)
+                                        else
+                                            -- Try to find a BasePart parent
+                                            local parent = plotSign.Parent
+                                            while parent and not parent:IsA("BasePart") do
+                                                parent = parent.Parent
+                                            end
+                                            if parent and parent:IsA("BasePart") then
+                                                char.HumanoidRootPart.CFrame = parent.CFrame + Vector3.new(0, 5, 0)
+                                            end
                                         end
+                                        
+                                        -- Freeze character
+                                        spawn(function()
+                                            freezeCharacter(char, 1)
+                                            TpCompletedS = true
+                                            print("Teleport completed!")
+                                        end)
+                                        
+                                        return
                                     end
                                 end
                             end
                         end
-                    else
-                        print("No SurfaceGui found in PlotSign")
-                    end
-                else
-                    -- Debug: Check if any model has PlotSign-like names
-                    for _, child in ipairs(descendant:GetChildren()) do
-                        if string.find(child.Name:lower(), "plot") or string.find(child.Name:lower(), "sign") then
-                            print("Found similar object:", child.Name, "in model:", descendant.Name)
-                        end
                     end
                 end
             end
         end
-        return false
     end
     
-    -- Search in workspace
-    if searchInDescendants(game.Workspace) and foundBase then
-        -- Get the position of the part that contains the SurfaceGui
-        local targetPart = foundBase
-        if targetPart and targetPart:IsA("BasePart") then
-            local teleportPosition = targetPart.CFrame + Vector3.new(0, 5, 0) -- Teleport slightly above the part
-            
-            -- Teleport and freeze character
-            spawn(function()
-                freezeCharacterAtPosition(char, teleportPosition, 1)
-                TpCompletedS = true
-                print("Teleported to base successfully!")
-            end)
-        else
-            -- If PlotSign is not a BasePart, try to find a BasePart parent
-            local parentPart = targetPart.Parent
-            while parentPart and not parentPart:IsA("BasePart") do
-                parentPart = parentPart.Parent
-            end
-            
-            if parentPart and parentPart:IsA("BasePart") then
-                local teleportPosition = parentPart.CFrame + Vector3.new(0, 5, 0)
-                spawn(function()
-                    freezeCharacterAtPosition(char, teleportPosition, 1)
-                    TpCompletedS = true
-                    print("Teleported to base successfully!")
-                end)
-            else
-                warn("Could not find a valid part to teleport to")
-            end
-        end
-    else
-        warn("Could not find base for player: " .. storedPlayerName)
-        print("Looking for text: " .. storedPlayerName .. "'s Base")
-    end
+    print("Base not found for player:", storedPlayerName)
 end
 
--- Create GUI
+-- Simple GUI
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ModMenuGui"
+screenGui.Name = "SimpleModMenu"
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
-local mainButton = Instance.new("ImageButton")
+-- Main button
+local mainButton = Instance.new("TextButton")
 mainButton.Name = "MainButton"
-mainButton.Size = UDim2.new(0, 70, 0, 70)
-mainButton.Position = UDim2.new(0.1, 0, 0.1, 0)
-mainButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-mainButton.BorderSizePixel = 2
-mainButton.BorderColor3 = Color3.fromRGB(255,0,0)
-mainButton.Image = imageId
+mainButton.Size = UDim2.new(0, 100, 0, 50)
+mainButton.Position = UDim2.new(0, 10, 0, 10)
+mainButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+mainButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+mainButton.Text = "TP BASE"
+mainButton.Font = Enum.Font.SourceSans
+mainButton.TextSize = 18
 mainButton.Parent = screenGui
-mainButton.Draggable = true
 
-local modMenu = Instance.new("Frame")
-modMenu.Name = "ModMenu"
-modMenu.Size = UDim2.new(0, 250, 0, 320)
-modMenu.Position = UDim2.new(0.1, 80, 0.1, 0)
-modMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-modMenu.BorderSizePixel = 2
-modMenu.BorderColor3 = Color3.fromRGB(255,0,0)
-modMenu.Visible = false
-modMenu.Parent = screenGui
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundTransparency = 1
-title.Text = "MOD MENU"
-title.Font = Enum.Font.GothamBold
-title.TextColor3 = Color3.fromRGB(255,0,0)
-title.TextSize = 28
-title.Parent = modMenu
-
--- Make modMenu draggable
-local dragging = false
-local dragInput, dragStart, startPos
-
-modMenu.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = modMenu.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-modMenu.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        modMenu.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
--- Function to create toggle buttons
-local function createToggle(name, ypos)
-    local frame = Instance.new("Frame")
-    frame.BackgroundTransparency = 1
-    frame.Size = UDim2.new(1, -20, 0, 45)
-    frame.Position = UDim2.new(0, 10, 0, ypos)
-    frame.Parent = modMenu
-    
-    local button = Instance.new("TextButton")
-    button.Name = name.."Button"
-    button.Size = UDim2.new(0.7, 0, 1, 0)
-    button.Position = UDim2.new(0, 0, 0, 0)
-    button.BackgroundColor3 = Color3.fromRGB(40,0,0)
-    button.TextColor3 = Color3.fromRGB(255,255,255)
-    button.Font = Enum.Font.Gotham
-    button.Text = name
-    button.TextSize = 20
-    button.Parent = frame
-    
-    local toggle = Instance.new("TextLabel")
-    toggle.Name = "Toggle"
-    toggle.Size = UDim2.new(0.3, 0, 1, 0)
-    toggle.Position = UDim2.new(0.7, 0, 0, 0)
-    toggle.BackgroundColor3 = Color3.fromRGB(60,0,0)
-    toggle.TextColor3 = Color3.fromRGB(255,0,0)
-    toggle.Font = Enum.Font.GothamBold
-    toggle.Text = "OFF"
-    toggle.TextSize = 18
-    toggle.Parent = frame
-    
-    return button, toggle
-end
-
--- Create buttons (removed TP Wall and TP UP, added TP BASE)
-local y = 50
-local buttons = {}
-
-buttons.TPBase, buttons.TPBaseToggle = createToggle("TP BASE", y)
-buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y+50)
-buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+100)
-buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y+150)
-
--- Toggle states
-local toggles = {
-    TPBase = false,
-    Speed = false,
-    Jump = false,
-    AutoHit = false,
-}
-
-local connections = {}
-
--- Noclip functionality (used for some features)
-local noclipActive = false
-local noclipConnection = nil
-
-local function setNoclip(active)
-    if noclipActive == active then return end
-    noclipActive = active
-    
-    if noclipActive then
-        noclipConnectiono t = runService.Stepped:Connect(function()
-            local char = player.Character
-            if char then
-                for _, part in ipairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") and part.CanCollide == true then
-                        part.CanCollide = false
-                    end
-                end
-            end
-        end)
-    else
-        if noclipConnection then noclipConnection:Disconnect() end
-        local char = player.Character
-        if char then
-            for _, part in ipairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
-            end
-        end
-    end
-end
-
--- Button click handlers
-buttons.TPBase.MouseButton1Click:Connect(function()
-    toggles.TPBase = not toggles.TPBase
-    buttons.TPBaseToggle.Text = toggles.TPBase and "ON" or "OFF"
-    buttons.TPBaseToggle.TextColor3 = toggles.TPBase and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-    
-    if toggles.TPBase then
-        teleportToBase()
-        -- Auto turn off after teleport
-        wait(0.1)
-        toggles.TPBase = false
-        buttons.TPBaseToggle.Text = "OFF"
-        buttons.TPBaseToggle.TextColor3 = Color3.fromRGB(255,0,0)
-    end
-end)
-
-buttons.Speed.MouseButton1Click:Connect(function()
-    toggles.Speed = not toggles.Speed
-    buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
-    buttons.SpeedToggle.TextColor3 = toggles.Speed and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-    
-    local char = player.Character
-    if char and char:FindFirstChild("Humanoid") then
-        if toggles.Speed then
-            char.Humanoid.WalkSpeed = 50
-        else
-            char.Humanoid.WalkSpeed = 16
-        end
-    end
-end)
-
-buttons.Jump.MouseButton1Click:Connect(function()
-    toggles.Jump = not toggles.Jump
-    buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
-    buttons.JumpToggle.TextColor3 = toggles.Jump and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-    
-    local char = player.Character
-    if char and char:FindFirstChild("Humanoid") then
-        if toggles.Jump then
-            char.Humanoid.JumpPower = 100
-        else
-            char.Humanoid.JumpPower = 50
-        end
-    end
-end)
-
-buttons.AutoHit.MouseButton1Click:Connect(function()
-    toggles.AutoHit = not toggles.AutoHit
-    buttons.AutoHitToggle.Text = toggles.AutoHit and "ON" or "OFF"
-    buttons.AutoHitToggle.TextColor3 = toggles.AutoHit and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-    
-    if connections.AutoHit then
-        connections.AutoHit:Disconnect()
-        connections.AutoHit = nil
-    end
-    
-    if toggles.AutoHit then
-        connections.AutoHit = runService.RenderStepped:Connect(function()
-            -- Auto hit logic - simulate mouse click
-            if mouse.Target and mouse.Target.Parent:FindFirstChild("Humanoid") then
-                -- Simulate tool activation or hit
-                local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
-                if tool and tool:FindFirstChild("Handle") then
-                    tool:Activate()
-                end
-            end
-        end)
-    end
-end)
-
--- Main button toggle
+-- Button click handler
 mainButton.MouseButton1Click:Connect(function()
-    modMenu.Visible = not modMenu.Visible
+    mainButton.Text = "Searching..."
+    mainButton.BackgroundColor3 = Color3.fromRGB(100, 100, 0)
+    
+    teleportToBase()
+    
+    wait(0.5)
+    mainButton.Text = "TP BASE"
+    mainButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 end)
 
--- Clean up on player leaving
-game.Players.PlayerRemoving:Connect(function(leavingPlayer)
-    if leavingPlayer == player then
-        for _, connection in pairs(connections) do
-            if connection then
-                connection:Disconnect()
-            end
-        end
-        if noclipConnection then
-            noclipConnection:Disconnect()
-        end
-    end
-end)
-
-print("Mod menu loaded successfully!")
-print("Stored player name: " .. storedPlayerName)
-print("TpCompletedS initialized as: " .. tostring(TpCompletedS))
+print("Simple mod menu loaded!")
+print("Player name stored:", storedPlayerName)
