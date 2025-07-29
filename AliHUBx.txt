@@ -52,7 +52,13 @@ local function teleportToBase()
     local targetBaseName = storedPlayerName .. "'s Base"
     print("[DEBUG] Procurando base: " .. targetBaseName)
     
-    for _, model in ipairs(workspace:GetChildren()) do
+local plotsFolder = workspace:FindFirstChild("Plots")
+if not plotsFolder then
+    warn("Pasta 'Plots' não encontrada no workspace!")
+    return
+end
+
+for _, model in ipairs(plotsFolder:GetChildren()) do
         if model:IsA("Model") then
             print("[DEBUG] Checando Model: " .. model.Name)
             local plotSign = model:FindFirstChild("PlotSign")
