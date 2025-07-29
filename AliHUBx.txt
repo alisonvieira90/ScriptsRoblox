@@ -1,139 +1,259 @@
--- Simple client-side script for StarterPlayer > StarterPlayerScripts
+local imageId = "rbxassetid://83777934849279"
+local toolName = "Tung Bat"
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local runService = game:GetService("RunService")
+local baseY = 100
 
--- Store player name when script starts
-local storedPlayerName = player.Name
-local TpCompletedS = false
-
--- Simple freeze function
-local function freezeCharacter(char, freezeTime)
+-- Function to freeze character at position for freezeTime seconds
+local function freezeCharacterAtPosition(char, position, freezeTime)
     freezeTime = freezeTime or 1
-    
-    -- Anchor all parts
-    for _, part in pairs(char:GetChildren()) do
+    for _, part in ipairs(char:GetDescendants()) do
         if part:IsA("BasePart") then
             part.Anchored = true
         end
     end
-    
-    -- Wait and unfreeze
+
+    if char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = position
+    end
+
+    local conn
+    conn = runService.RenderStepped:Connect(function()
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = position
+        else
+            conn:Disconnect()
+        end
+    end)
+
     wait(freezeTime)
-    
-    for _, part in pairs(char:GetChildren()) do
+
+    for _, part in ipairs(char:GetDescendants()) do
         if part:IsA("BasePart") then
             part.Anchored = false
         end
     end
+
+    if conn then conn:Disconnect() end
 end
 
--- Function to find and teleport to player's base  
-local function teleportToBase()
-    TpCompletedS = false
-    local char = player.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then
-        print("Character not found")
-        return
+-- GUI Setup
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ModMenuGui"
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local mainButton = Instance.new("ImageButton")
+mainButton.Name = "MainButton"
+mainButton.Size = UDim2.new(0, 70, 0, 70)
+mainButton.Position = UDim2.new(0.1, 0, 0.1, 0)
+mainButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+mainButton.BorderSizePixel = 2
+mainButton.BorderColor3 = Color3.fromRGB(255,0,0)
+mainButton.Image = imageId
+mainButton.Parent = screenGui
+mainButton.Draggable = true
+
+local modMenu = Instance.new("Frame")
+modMenu.Name = "ModMenu"
+modMenu.Size = UDim2.new(0, 250, 0, 320)
+modMenu.Position = UDim2.new(0.1, 80, 0.1, 0)
+modMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+modMenu.BorderSizePixel = 2
+modMenu.BorderColor3 = Color3.fromRGB(255,0,0)
+modMenu.Visible = false
+modMenu.Parent = screenGui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.Text = "MOD MENU"
+title.Font = Enum.Font.GothamBold
+title.TextColor3 = Color3.fromRGB(255,0,0)
+title.TextSize = 28
+title.Parent = modMenu
+
+-- Draggable menu
+local dragging = false
+local dragInput, dragStart, startPos
+
+modMenu.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = modMenu.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
-    
-    print("Starting search for base...")
-    print("Looking for:", storedPlayerName .. "'s Base")
-    
-    -- Search through all descendants in workspace
-    for _, obj in pairs(game.Workspace:GetDescendants()) do
-        -- Look for Models
-        if obj:IsA("Model") then
-            -- Check if model has PlotSign
-            local plotSign = obj:FindFirstChild("PlotSign")
-            if plotSign then
-                print("Found PlotSign in:", obj.Name)
-                
-                -- Check for SurfaceGui in PlotSign
-                local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
-                if surfaceGui then
-                    print("Found SurfaceGui")
-                    
-                    -- Look through all children for Frame
-                    for _, child in pairs(surfaceGui:GetChildren()) do
-                        if child:IsA("Frame") then
-                            print("Found Frame")
-                            
-                            -- Look for TextLabel in Frame
-                            for _, label in pairs(child:GetChildren()) do
-                                if label:IsA("TextLabel") then
-                                    local text = label.Text
-                                    local expectedText = storedPlayerName .. "'s Base"
-                                    
-                                    print("TextLabel text:", text)
-                                    print("Expected:", expectedText)
-                                    
-                                    if text == expectedText then
-                                        print("Match found! Teleporting...")
-                                        
-                                        -- Teleport to PlotSign position
-                                        if plotSign:IsA("BasePart") then
-                                            char.HumanoidRootPart.CFrame = plotSign.CFrame + Vector3.new(0, 5, 0)
-                                        else
-                                            -- Try to find a BasePart parent
-                                            local parent = plotSign.Parent
-                                            while parent and not parent:IsA("BasePart") do
-                                                parent = parent.Parent
-                                            end
-                                            if parent and parent:IsA("BasePart") then
-                                                char.HumanoidRootPart.CFrame = parent.CFrame + Vector3.new(0, 5, 0)
-                                            end
-                                        end
-                                        
-                                        -- Freeze character
-                                        spawn(function()
-                                            freezeCharacter(char, 1)
-                                            TpCompletedS = true
-                                            print("Teleport completed!")
-                                        end)
-                                        
-                                        return
-                                    end
-                                end
-                            end
-                        end
+end)
+
+modMenu.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        modMenu.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+local function createToggle(name, ypos)
+    local frame = Instance.new("Frame")
+    frame.BackgroundTransparency = 1
+    frame.Size = UDim2.new(1, -20, 0, 45)
+    frame.Position = UDim2.new(0, 10, 0, ypos)
+    frame.Parent = modMenu
+
+    local button = Instance.new("TextButton")
+    button.Name = name.."Button"
+    button.Size = UDim2.new(0.7, 0, 1, 0)
+    button.Position = UDim2.new(0, 0, 0, 0)
+    button.BackgroundColor3 = Color3.fromRGB(40,0,0)
+    button.TextColor3 = Color3.fromRGB(255,255,255)
+    button.Font = Enum.Font.Gotham
+    button.Text = name
+    button.TextSize = 20
+    button.Parent = frame
+
+    local toggle = Instance.new("TextLabel")
+    toggle.Name = "Toggle"
+    toggle.Size = UDim2.new(0.3, 0, 1, 0)
+    toggle.Position = UDim2.new(0.7, 0, 0, 0)
+    toggle.BackgroundColor3 = Color3.fromRGB(60,0,0)
+    toggle.TextColor3 = Color3.fromRGB(255,0,0)
+    toggle.Font = Enum.Font.GothamBold
+    toggle.Text = "OFF"
+    toggle.TextSize = 18
+    toggle.Parent = frame
+
+    return button, toggle
+end
+
+local y = 50
+local buttons = {}
+buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y)
+buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+50)
+buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y+100)
+buttons.TPBase, buttons.TPBaseToggle = createToggle("TP BASE", y+150)
+
+local toggles = {
+    Speed = false,
+    Jump = false,
+    AutoHit = false,
+    TPBase = false,
+}
+
+local connections = {}
+
+local noclipActive = false
+local noclipConnection = nil
+
+local function setNoclip(active)
+    if noclipActive == active then return end
+    noclipActive = active
+    if noclipActive then
+        noclipConnection = runService.Stepped:Connect(function()
+            local char = player.Character
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide == true then
+                        part.CanCollide = false
                     end
+                end
+            end
+        end)
+    else
+        if noclipConnection then
+            noclipConnection:Disconnect()
+            noclipConnection = nil
+        end
+        local char = player.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
                 end
             end
         end
     end
-    
-    print("Base not found for player:", storedPlayerName)
 end
 
--- Simple GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "SimpleModMenu"
-screenGui.Parent = player:WaitForChild("PlayerGui")
+-- TP BASE FUNCTIONALITY
+local TpCompletedS = false
+local storedPlayerName = player.Name
 
--- Main button
-local mainButton = Instance.new("TextButton")
-mainButton.Name = "MainButton"
-mainButton.Size = UDim2.new(0, 100, 0, 50)
-mainButton.Position = UDim2.new(0, 10, 0, 10)
-mainButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-mainButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-mainButton.Text = "TP BASE"
-mainButton.Font = Enum.Font.SourceSans
-mainButton.TextSize = 18
-mainButton.Parent = screenGui
+local function findBaseAndTeleport(playerName)
+    local baseFound = false
+    local plotSignPart
 
--- Button click handler
-mainButton.MouseButton1Click:Connect(function()
-    mainButton.Text = "Searching..."
-    mainButton.BackgroundColor3 = Color3.fromRGB(100, 100, 0)
-    
-    teleportToBase()
-    
-    wait(0.5)
-    mainButton.Text = "TP BASE"
-    mainButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    -- Search for PlotSign with SurfaceGui and TextLabel containing PlayerName's Base
+    for _, model in ipairs(workspace:GetChildren()) do
+        if model:IsA("Model") then
+            local plotSign = model:FindFirstChild("PlotSign")
+            if plotSign and plotSign:IsA("BasePart") then
+                local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
+                if surfaceGui and surfaceGui:IsA("SurfaceGui") then
+                    for _, frame in ipairs(surfaceGui:GetChildren()) do
+                        if frame:IsA("Frame") then
+                            for _, txt in ipairs(frame:GetChildren()) do
+                                if txt:IsA("TextLabel") and txt.Text and string.find(txt.Text, playerName.."'s Base") then
+                                    plotSignPart = plotSign
+                                    baseFound = true
+                                    break
+                                end
+                            end
+                        end
+                        if baseFound then break end
+                    end
+                end
+            end
+        end
+        if baseFound then break end
+    end
+
+    if plotSignPart then
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            TpCompletedS = false
+            local targetCFrame = plotSignPart.CFrame + Vector3.new(0, 5, 0) -- Teleport above sign
+            freezeCharacterAtPosition(char, targetCFrame, 1)
+            TpCompletedS = true
+        end
+    else
+        warn("Base not found for player: "..playerName)
+    end
+end
+
+-- Toggle handling
+buttons.TPBase.MouseButton1Click:Connect(function()
+    if not toggles.TPBase then
+        toggles.TPBase = true
+        buttons.TPBaseToggle.Text = "ON"
+        findBaseAndTeleport(storedPlayerName)
+        -- Set toggle back off after tp
+        toggles.TPBase = false
+        buttons.TPBaseToggle.Text = "OFF"
+    end
 end)
 
-print("Simple mod menu loaded!")
-print("Player name stored:", storedPlayerName)
+-- Example: Speed Boost, Jump Boost, Auto Hit toggles (implement their functionalities as needed)
+buttons.Speed.MouseButton1Click:Connect(function()
+    toggles.Speed = not toggles.Speed
+    buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
+    -- Implement speed boost here
+end)
+buttons.Jump.MouseButton1Click:Connect(function()
+    toggles.Jump = not toggles.Jump
+    buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
+    -- Implement jump boost here
+end)
+buttons.AutoHit.MouseButton1Click:Connect(function()
+    toggles.AutoHit = not toggles.AutoHit
+    buttons.AutoHitToggle.Text = toggles.AutoHit and "ON" or "OFF"
+    -- Implement auto hit here
+end)
+
+-- Show/Hide menu
+mainButton.MouseButton1Click:Connect(function()
+    modMenu.Visible = not modMenu.Visible
+end)
