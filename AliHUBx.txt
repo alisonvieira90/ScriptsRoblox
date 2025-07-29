@@ -54,30 +54,46 @@ local function teleportToBase()
     -- Search for SurfaceGui objects inside PlotSign models
     local foundBase = nil
     local function searchInDescendants(parent)
+        print("Starting search in workspace...")
         for _, descendant in ipairs(parent:GetDescendants()) do
             -- Look for models that contain PlotSign
             if descendant:IsA("Model") then
                 local plotSign = descendant:FindFirstChild("PlotSign")
                 if plotSign then
+                    print("Found PlotSign in model:", descendant.Name)
                     -- Look for SurfaceGui inside PlotSign
                     local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
                     if surfaceGui then
+                        print("Found SurfaceGui in PlotSign")
                         -- Look for Frame inside SurfaceGui, then TextLabel inside Frame
                         for _, frame in ipairs(surfaceGui:GetChildren()) do
                             if frame:IsA("Frame") then
+                                print("Found Frame in SurfaceGui")
                                 for _, child in ipairs(frame:GetChildren()) do
                                     if child:IsA("TextLabel") then
                                         local text = child.Text
                                         local expectedText = storedPlayerName .. "'s Base"
+                                        print("Found TextLabel with text:", text)
+                                        print("Expected text:", expectedText)
                                         
                                         -- Check if text matches exactly: "PlayerName's Base"
                                         if text == expectedText then
+                                            print("Text matches! Found base for player")
                                             foundBase = plotSign
                                             return true
                                         end
                                     end
                                 end
                             end
+                        end
+                    else
+                        print("No SurfaceGui found in PlotSign")
+                    end
+                else
+                    -- Debug: Check if any model has PlotSign-like names
+                    for _, child in ipairs(descendant:GetChildren()) do
+                        if string.find(child.Name:lower(), "plot") or string.find(child.Name:lower(), "sign") then
+                            print("Found similar object:", child.Name, "in model:", descendant.Name)
                         end
                     end
                 end
@@ -244,7 +260,7 @@ local function setNoclip(active)
     noclipActive = active
     
     if noclipActive then
-        noclipConnection = runService.Stepped:Connect(function()
+        noclipConnectiono t = runService.Stepped:Connect(function()
             local char = player.Character
             if char then
                 for _, part in ipairs(char:GetDescendants()) do
