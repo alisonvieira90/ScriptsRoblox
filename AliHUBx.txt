@@ -224,7 +224,7 @@ local function setNoclip(active)
     noclipActive = active
     
     if noclipActive then
-        noclipConnection = runService.Stepped:Connect(function()
+        noclipConnectiono t = runService.Stepped:Connect(function()
             local char = player.Character
             if char then
                 for _, part in ipairs(char:GetDescendants()) do
