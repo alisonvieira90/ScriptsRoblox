@@ -97,7 +97,7 @@ end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
-screenGui.Parent = player:WaitForChild("PlayerGui")
+local uiParent = gethui and gethui() or game.CoreGui screenGui.Parent = uiParent
 
 local mainButton = Instance.new("ImageButton")
 mainButton.Name = "MainButton"
