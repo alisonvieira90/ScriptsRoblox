@@ -1,6 +1,6 @@
 print("Carregado o alixploit")
-
 local imageId = "rbxassetid://83777934849279"
+
 local toolName = "Tung Bat"
 
 local player = game.Players.LocalPlayer
@@ -29,7 +29,7 @@ end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
-screenGui.Parent = game:GetService("CoreGui") -- Troquei PlayerGui para CoreGui
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local mainButton = Instance.new("ImageButton")
 mainButton.Name = "MainButton"
@@ -118,8 +118,6 @@ end
 
 local y = 50
 local buttons = {}
-
--- Usar botões toggle para TPBASE, Speed, Jump e AutoHit
 buttons.TPBASE, buttons.TPBASEToggle = createToggle("TP BASE", y)
 buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y+50)
 buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+100)
@@ -167,7 +165,7 @@ local function setNoclip(active)
     end
 end
 
--- Função TP BASE
+-- Função TP BASE com offset para trás e para baixo
 local function teleportToBase()
     local Plots = workspace:FindFirstChild("Plots")
     if not Plots then return end
@@ -181,10 +179,11 @@ local function teleportToBase()
                 if frame then
                     local textLabel = frame:FindFirstChildWhichIsA("TextLabel")
                     if textLabel and textLabel.Text == (storedPlayerName .. "'s Base") then
-                        -- Teleporta
+                        -- Teleporta com offset atrás e abaixo
                         local char = player.Character
                         if char and char:FindFirstChild("HumanoidRootPart") then
-                            char.HumanoidRootPart.CFrame = plotSign.CFrame * CFrame.new(0,5,0)
+                            local offset = CFrame.new(0, -3, 5)
+                            char.HumanoidRootPart.CFrame = plotSign.CFrame * offset
                             IFtpc = true
                             freezeCharacter(char, 1)
                             IFtpc = false
@@ -201,77 +200,6 @@ buttons.TPBASE.MouseButton1Click:Connect(function()
     teleportToBase()
 end)
 
-buttons.Speed.MouseButton1Click:Connect(function()
-    toggles.Speed = not toggles.Speed
-    buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
-    buttons.SpeedToggle.BackgroundColor3 = toggles.Speed and Color3.fromRGB(0,60,0) or Color3.fromRGB(60,0,0)
-
-    if toggles.Speed then
-        connections.Speed = runService.RenderStepped:Connect(function()
-            local char = player.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid.WalkSpeed = 50
-            end
-        end)
-    else
-        if connections.Speed then
-            connections.Speed:Disconnect()
-        end
-        local char = player.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.WalkSpeed = 16
-        end
-    end
-end)
-
-buttons.Jump.MouseButton1Click:Connect(function()
-    toggles.Jump = not toggles.Jump
-    buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
-    buttons.JumpToggle.BackgroundColor3 = toggles.Jump and Color3.fromRGB(0,60,0) or Color3.fromRGB(60,0,0)
-
-    if toggles.Jump then
-        connections.Jump = runService.RenderStepped:Connect(function()
-            local char = player.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid.JumpPower = 100
-            end
-        end)
-    else
-        if connections.Jump then
-            connections.Jump:Disconnect()
-        end
-        local char = player.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.JumpPower = 50
-        end
-    end
-end)
-
-buttons.AutoHit.MouseButton1Click:Connect(function()
-    toggles.AutoHit = not toggles.AutoHit
-    buttons.AutoHitToggle.Text = toggles.AutoHit and "ON" or "OFF"
-    buttons.AutoHitToggle.BackgroundColor3 = toggles.AutoHit and Color3.fromRGB(0,60,0) or Color3.fromRGB(60,0,0)
-
-    if toggles.AutoHit then
-        connections.AutoHit = runService.RenderStepped:Connect(function()
-            mouse.Button1Down:Connect(function()
-                local target = mouse.Target
-                if target and target.Parent:FindFirstChild("Humanoid") then
-                    print("Auto hitting target")
-                end
-            end)
-        end)
-    else
-        if connections.AutoHit then
-            connections.AutoHit:Disconnect()
-        end
-    end
-end)
-
--- Toggle menu visibility
 mainButton.MouseButton1Click:Connect(function()
     modMenu.Visible = not modMenu.Visible
 end)
-
-print("[DEBUG] Mod Menu carregado!")
-print("[DEBUG] Player armazenado: " .. storedPlayerName)
