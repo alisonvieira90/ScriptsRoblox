@@ -1,20 +1,18 @@
-local imageId = "rbxassetid://83777934849279"
-
-local toolName = "Tung Bat"
-
 local player = game.Players.LocalPlayer
-
-local mouse = player:GetMouse()
-
 local runService = game:GetService("RunService")
+local mouse = player:GetMouse()
+local imageId = "rbxassetid://83777934849279"
 
 local baseY = 100
 
--- Store player display name when script starts  
 local storedPlayerName = player.DisplayName
-
--- Variable to track teleport completion status
 local TpCompletedS = false
+
+local function getCharacterAndHRP()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart", 5)
+    return char, hrp
+end
 
 local function freezeCharacterAtPosition(char, position, freezeTime)
     freezeTime = freezeTime or 1
@@ -49,46 +47,32 @@ local function freezeCharacterAtPosition(char, position, freezeTime)
     if conn then conn:Disconnect() end
 end
 
--- TP BASE function
 local function teleportToBase()
     local targetBaseName = storedPlayerName .. "'s Base"
     print("Searching for base: " .. targetBaseName)
     
-    -- Search through all models in workspace
-    for _, model in ipairs(game.Workspace:GetChildren()) do
+    for _, model in ipairs(workspace:GetChildren()) do
         if model:IsA("Model") then
-            -- Look for PlotSign part in the model
             local plotSign = model:FindFirstChild("PlotSign")
             if plotSign and plotSign:IsA("BasePart") then
-                -- Navigate the hierarchy: PlotSign → SurfaceGui → Frame → TextLabel
                 local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
                 if surfaceGui and surfaceGui:IsA("SurfaceGui") then
                     local frame = surfaceGui:FindFirstChild("Frame")
                     if frame and frame:IsA("Frame") then
                         local textLabel = frame:FindFirstChild("TextLabel")
                         if textLabel and textLabel:IsA("TextLabel") then
-                            -- Check if the text matches the player's base name
                             if textLabel.Text == targetBaseName then
                                 print("Found matching base: " .. textLabel.Text)
-                                
-                                -- Set teleport completion status
                                 TpCompletedS = true
-                                
-                                -- Get player character
-                                local character = player.Character
-                                if character and character:FindFirstChild("HumanoidRootPart") then
-                                    -- Teleport to PlotSign position
-                                    local teleportPosition = plotSign.CFrame + Vector3.new(0, 5, 0) -- Offset slightly above
-                                    
-                                    -- Use existing freeze function to anchor character during teleport
+                                local character, hrp = getCharacterAndHRP()
+                                if hrp then
+                                    local teleportPosition = plotSign.CFrame * CFrame.new(0, 5, 0)
                                     spawn(function()
                                         freezeCharacterAtPosition(character, teleportPosition, 1)
-                                        -- Reset teleport completion status after freeze
                                         TpCompletedS = false
                                     end)
-                                    
                                     print("Teleported to base successfully!")
-                                    return -- Exit function after successful teleport
+                                    return
                                 end
                             end
                         end
@@ -98,7 +82,7 @@ local function teleportToBase()
         end
     end
     
-    print("Base not found: " .. targetBaseName)
+    warn("Base not found: " .. targetBaseName)
 end
 
 local screenGui = Instance.new("ScreenGui")
