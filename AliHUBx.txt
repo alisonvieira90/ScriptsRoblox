@@ -178,10 +178,13 @@ local function teleportToBase()
                 if frame then
                     local textLabel = frame:FindFirstChildWhichIsA("TextLabel")
                     if textLabel and textLabel.Text == (storedPlayerName .. "'s Base") then
-                        -- Teleporta com offset atrás e para Y = -9.053
+                        -- Teleporta atrás e um pouco abaixo
                         local char = player.Character
                         if char and char:FindFirstChild("HumanoidRootPart") then
-                     char.HumanoidRootPart.CFrame = plotSign.CFrame * CFrame.new(0, -20, -15)
+                            local offsetBehind = plotSign.CFrame.LookVector * -10 -- 10 studs atrás
+                            local offsetDown = Vector3.new(0, -15, 0) -- 15 studs para baixo
+                            local targetPosition = plotSign.CFrame.Position + offsetBehind + offsetDown
+                            char.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                             IFtpc = true
                             freezeCharacter(char, 1)
                             IFtpc = false
@@ -193,8 +196,6 @@ local function teleportToBase()
         end
     end
 end
-
-
 
 buttons.TPBASE.MouseButton1Click:Connect(function()
     teleportToBase()
