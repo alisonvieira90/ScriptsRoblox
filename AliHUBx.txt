@@ -1,103 +1,34 @@
-
-local player = game.Players.LocalPlayer
-local runService = game:GetService("RunService")
-local mouse = player:GetMouse()
 local imageId = "rbxassetid://83777934849279"
 
+local toolName = "Tung Bat"
+
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local runService = game:GetService("RunService")
 local baseY = 100
 
+-- Armazenar display name ao iniciar
 local storedPlayerName = player.DisplayName
-local TpCompletedS = false
 
-local function getCharacterAndHRP()
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart", 5)
-    return char, hrp
-end
+local IFtpc = false
 
-local function freezeCharacterAtPosition(char, position, freezeTime)
-    freezeTime = freezeTime or 1
-    
+local function freezeCharacter(char, freezeTime)
     for _, part in ipairs(char:GetDescendants()) do
         if part:IsA("BasePart") then
             part.Anchored = true
         end
     end
-
-    if char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = position
-    end
-
-    local conn
-    conn = runService.RenderStepped:Connect(function()
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.CFrame = position
-        else
-            conn:Disconnect()
-        end
-    end)
-
-    wait(freezeTime)
-
+    wait(freezeTime or 1)
     for _, part in ipairs(char:GetDescendants()) do
         if part:IsA("BasePart") then
             part.Anchored = false
         end
     end
-
-    if conn then conn:Disconnect() end
-end
-
-local function teleportToBase()
-    local targetBaseName = storedPlayerName .. "'s Base"
-    print("[DEBUG] Procurando base: " .. targetBaseName)
-    
-local plotsFolder = workspace:FindFirstChild("Plots")
-if not plotsFolder then
-    warn("Pasta 'Plots' não encontrada no workspace!")
-    return
-end
-
-for _, model in ipairs(plotsFolder:GetChildren()) do
-        if model:IsA("Model") then
-            print("[DEBUG] Checando Model: " .. model.Name)
-            local plotSign = model:FindFirstChild("PlotSign")
-            if plotSign and plotSign:IsA("BasePart") then
-                print("[DEBUG] PlotSign encontrado em " .. model.Name)
-                local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
-                if surfaceGui then
-                    local frame = surfaceGui:FindFirstChild("Frame")
-                    if frame then
-                        local textLabel = frame:FindFirstChild("TextLabel")
-                        if textLabel then
-                            print("[DEBUG] TextLabel encontrado, texto: " .. textLabel.Text)
-                            if textLabel.Text == targetBaseName then
-                                print("[DEBUG] Base encontrada! Teleportando...")
-                                TpCompletedS = true
-                                local character, hrp = getCharacterAndHRP()
-                                if hrp then
-                                    local teleportPosition = plotSign.CFrame * CFrame.new(0, 5, 0)
-                                    spawn(function()
-                                        freezeCharacterAtPosition(character, teleportPosition, 1)
-                                        TpCompletedS = false
-                                    end)
-                                    print("[DEBUG] Teleport feito com sucesso!")
-                                    return
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    
-    warn("[DEBUG] Nenhuma base encontrada com o nome: " .. targetBaseName)
 end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
-local uiParent = gethui and gethui() or game.CoreGui screenGui.Parent = uiParent
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local mainButton = Instance.new("ImageButton")
 mainButton.Name = "MainButton"
@@ -137,7 +68,6 @@ modMenu.InputBegan:Connect(function(input)
         dragging = true
         dragStart = input.Position
         startPos = modMenu.Position
-        
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
@@ -185,37 +115,17 @@ local function createToggle(name, ypos)
     return button, toggle
 end
 
-local function createActionButton(name, ypos)
-    local frame = Instance.new("Frame")
-    frame.BackgroundTransparency = 1
-    frame.Size = UDim2.new(1, -20, 0, 45)
-    frame.Position = UDim2.new(0, 10, 0, ypos)
-    frame.Parent = modMenu
-
-    local button = Instance.new("TextButton")
-    button.Name = name.."Button"
-    button.Size = UDim2.new(1, 0, 1, 0)
-    button.Position = UDim2.new(0, 0, 0, 0)
-    button.BackgroundColor3 = Color3.fromRGB(0,40,0)
-    button.TextColor3 = Color3.fromRGB(255,255,255)
-    button.Font = Enum.Font.Gotham
-    button.Text = name
-    button.TextSize = 20
-    button.Parent = frame
-
-    return button
-end
-
 local y = 50
 local buttons = {}
-
-buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y)
-buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+50)
-buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y+100)
-
-buttons.TPBase = createActionButton("TP BASE", y+150)
+-- REMOVIDOS: TPWall e TPUP
+-- Adiciona TP BASE, Speed, Jump, AutoHit
+buttons.TPBASE, buttons.TPBASEToggle = createToggle("TP BASE", y)
+buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y+50)
+buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+100)
+buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y+150)
 
 local toggles = {
+    TPBASE = false,
     Speed = false,
     Jump = false,
     AutoHit = false,
@@ -223,82 +133,74 @@ local toggles = {
 
 local connections = {}
 
-mainButton.MouseButton1Click:Connect(function()
-    modMenu.Visible = not modMenu.Visible
-end)
+local noclipActive = false
+local noclipConnection = nil
 
-buttons.Speed.MouseButton1Click:Connect(function()
-    toggles.Speed = not toggles.Speed
-    buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
-    buttons.SpeedToggle.BackgroundColor3 = toggles.Speed and Color3.fromRGB(0,60,0) or Color3.fromRGB(60,0,0)
-    
-    if toggles.Speed then
-        connections.Speed = runService.RenderStepped:Connect(function()
+local function setNoclip(active)
+    if noclipActive == active then return end
+    noclipActive = active
+    if noclipActive then
+        noclipConnection = runService.Stepped:Connect(function()
             local char = player.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid.WalkSpeed = 50
-            end
-        end)
-    else
-        if connections.Speed then
-            connections.Speed:Disconnect()
-        end
-        local char = player.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.WalkSpeed = 16
-        end
-    end
-end)
-
-buttons.Jump.MouseButton1Click:Connect(function()
-    toggles.Jump = not toggles.Jump
-    buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
-    buttons.JumpToggle.BackgroundColor3 = toggles.Jump and Color3.fromRGB(0,60,0) or Color3.fromRGB(60,0,0)
-    
-    if toggles.Jump then
-        connections.Jump = runService.RenderStepped:Connect(function()
-            local char = player.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid.JumpPower = 100
-            end
-        end)
-    else
-        if connections.Jump then
-            connections.Jump:Disconnect()
-        end
-        local char = player.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.JumpPower = 50
-        end
-    end
-end)
-
-buttons.AutoHit.MouseButton1Click:Connect(function()
-    toggles.AutoHit = not toggles.AutoHit
-    buttons.AutoHitToggle.Text = toggles.AutoHit and "ON" or "OFF"
-    buttons.AutoHitToggle.BackgroundColor3 = toggles.AutoHit and Color3.fromRGB(0,60,0) or Color3.fromRGB(60,0,0)
-    
-    if toggles.AutoHit then
-        connections.AutoHit = runService.RenderStepped:Connect(function()
-            mouse.Button1Down:Connect(function()
-                local target = mouse.Target
-                if target and target.Parent:FindFirstChild("Humanoid") then
-                    print("Auto hitting target")
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide == true then
+                        part.CanCollide = false
+                    end
                 end
-            end)
+            end
         end)
     else
-        if connections.AutoHit then
-            connections.AutoHit:Disconnect()
+        if noclipConnection then
+            noclipConnection:Disconnect()
+            noclipConnection = nil
+        end
+        local char = player.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
         end
     end
-end)
+end
 
-buttons.TPBase.MouseButton1Click:Connect(function()
+-- Função TP BASE
+local function teleportToBase()
+    local Plots = workspace:FindFirstChild("Plots")
+    if not Plots then return end
+
+    for _, plotModel in ipairs(Plots:GetChildren()) do
+        local plotSign = plotModel:FindFirstChild("PlotSign")
+        if plotSign then
+            local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
+            if surfaceGui and surfaceGui:IsA("SurfaceGui") then
+                local frame = surfaceGui:FindFirstChildWhichIsA("Frame")
+                if frame then
+                    local textLabel = frame:FindFirstChildWhichIsA("TextLabel")
+                    if textLabel and textLabel.Text == (storedPlayerName .. "'s Base") then
+                        -- Teleporta
+                        local char = player.Character
+                        if char and char:FindFirstChild("HumanoidRootPart") then
+                            char.HumanoidRootPart.CFrame = plotSign.CFrame
+                            IFtpc = true
+                            freezeCharacter(char, 1)
+                            IFtpc = false
+                        end
+                        break
+                    end
+                end
+            end
+        end
+    end
+end
+
+buttons.TPBASE.MouseButton1Click:Connect(function()
     teleportToBase()
 end)
 
-print("[DEBUG] Mod Menu carregado!")
-print("[DEBUG] Player armazenado: " .. storedPlayerName)
-print("[DEBUG] Procurando base: " .. storedPlayerName .. "'s Base")
-
+-- Exibe/oculta o menu
+mainButton.MouseButton1Click:Connect(function()
+    modMenu.Visible = not modMenu.Visible
+end)
