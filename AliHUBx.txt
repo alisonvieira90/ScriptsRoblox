@@ -1,3 +1,4 @@
+
 local player = game.Players.LocalPlayer
 local runService = game:GetService("RunService")
 local mouse = player:GetMouse()
@@ -8,6 +9,8 @@ local baseY = 100
 local storedPlayerName = player.DisplayName
 local TpCompletedS = false
 
+print("[DEBUG] Script carregado! Player: " .. player.Name)
+
 local function getCharacterAndHRP()
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart", 5)
@@ -16,6 +19,7 @@ end
 
 local function freezeCharacterAtPosition(char, position, freezeTime)
     freezeTime = freezeTime or 1
+    print("[DEBUG] Freezando personagem...")
     
     for _, part in ipairs(char:GetDescendants()) do
         if part:IsA("BasePart") then
@@ -45,11 +49,12 @@ local function freezeCharacterAtPosition(char, position, freezeTime)
     end
 
     if conn then conn:Disconnect() end
+    print("[DEBUG] Personagem descongelado.")
 end
 
 local function teleportToBase()
     local targetBaseName = storedPlayerName .. "'s Base"
-    print("Searching for base: " .. targetBaseName)
+    print("[DEBUG] Procurando base: " .. targetBaseName)
     
     for _, model in ipairs(workspace:GetChildren()) do
         if model:IsA("Model") then
@@ -62,7 +67,7 @@ local function teleportToBase()
                         local textLabel = frame:FindFirstChild("TextLabel")
                         if textLabel and textLabel:IsA("TextLabel") then
                             if textLabel.Text == targetBaseName then
-                                print("Found matching base: " .. textLabel.Text)
+                                print("[DEBUG] Base encontrada!")
                                 TpCompletedS = true
                                 local character, hrp = getCharacterAndHRP()
                                 if hrp then
@@ -71,7 +76,7 @@ local function teleportToBase()
                                         freezeCharacterAtPosition(character, teleportPosition, 1)
                                         TpCompletedS = false
                                     end)
-                                    print("Teleported to base successfully!")
+                                    print("[DEBUG] Teleport realizado com sucesso!")
                                     return
                                 end
                             end
@@ -82,7 +87,7 @@ local function teleportToBase()
         end
     end
     
-    warn("Base not found: " .. targetBaseName)
+    warn("[DEBUG] Base não encontrada: " .. targetBaseName)
 end
 
 local screenGui = Instance.new("ScreenGui")
@@ -119,7 +124,6 @@ title.TextColor3 = Color3.fromRGB(255,0,0)
 title.TextSize = 28
 title.Parent = modMenu
 
--- Make mod menu draggable
 local dragging = false
 local dragInput, dragStart, startPos
 
@@ -144,7 +148,6 @@ modMenu.InputChanged:Connect(function(input)
     end
 end)
 
--- Function to create toggle buttons
 local function createToggle(name, ypos)
     local frame = Instance.new("Frame")
     frame.BackgroundTransparency = 1
@@ -177,7 +180,6 @@ local function createToggle(name, ypos)
     return button, toggle
 end
 
--- Function to create action button (for TP BASE)
 local function createActionButton(name, ypos)
     local frame = Instance.new("Frame")
     frame.BackgroundTransparency = 1
@@ -202,15 +204,12 @@ end
 local y = 50
 local buttons = {}
 
--- Create remaining toggle buttons (removed TPWall and TPUP)
 buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y)
 buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+50)
 buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y+100)
 
--- Create TP BASE action button
 buttons.TPBase = createActionButton("TP BASE", y+150)
 
--- Toggle states (removed TPWall and TPUP)
 local toggles = {
     Speed = false,
     Jump = false,
@@ -219,12 +218,10 @@ local toggles = {
 
 local connections = {}
 
--- Main button click to show/hide menu
 mainButton.MouseButton1Click:Connect(function()
     modMenu.Visible = not modMenu.Visible
 end)
 
--- Speed Boost functionality
 buttons.Speed.MouseButton1Click:Connect(function()
     toggles.Speed = not toggles.Speed
     buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
@@ -248,7 +245,6 @@ buttons.Speed.MouseButton1Click:Connect(function()
     end
 end)
 
--- Jump Boost functionality
 buttons.Jump.MouseButton1Click:Connect(function()
     toggles.Jump = not toggles.Jump
     buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
@@ -272,7 +268,6 @@ buttons.Jump.MouseButton1Click:Connect(function()
     end
 end)
 
--- Auto Hit functionality
 buttons.AutoHit.MouseButton1Click:Connect(function()
     toggles.AutoHit = not toggles.AutoHit
     buttons.AutoHitToggle.Text = toggles.AutoHit and "ON" or "OFF"
@@ -283,7 +278,6 @@ buttons.AutoHit.MouseButton1Click:Connect(function()
             mouse.Button1Down:Connect(function()
                 local target = mouse.Target
                 if target and target.Parent:FindFirstChild("Humanoid") then
-                    -- Auto hit logic here
                     print("Auto hitting target")
                 end
             end)
@@ -295,11 +289,10 @@ buttons.AutoHit.MouseButton1Click:Connect(function()
     end
 end)
 
--- TP BASE functionality
 buttons.TPBase.MouseButton1Click:Connect(function()
     teleportToBase()
 end)
 
-print("Mod Menu loaded successfully!")
-print("Player display name stored: " .. storedPlayerName)
-print("Looking for base: " .. storedPlayerName .. "'s Base")
+print("[DEBUG] Mod Menu carregado!")
+print("[DEBUG] Player armazenado: " .. storedPlayerName)
+print("[DEBUG] Procurando base: " .. storedPlayerName .. "'s Base")
