@@ -1,3 +1,4 @@
+print("Carregado o alixploit"
 local imageId = "rbxassetid://83777934849279"
 
 local toolName = "Tung Bat"
