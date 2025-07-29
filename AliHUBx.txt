@@ -1,71 +1,98 @@
-if game:GetService("CoreGui"):FindFirstChild("ModMenuGui") then
-    game:GetService("CoreGui").ModMenuGui:Destroy()
-end
-
 local imageId = "rbxassetid://83777934849279"
 local toolName = "Tung Bat"
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local runService = game:GetService("RunService")
-local soundService = game:GetService("SoundService")
-local userInputService = game:GetService("UserInputService")
 local baseY = 100
 
-local sounds = {
-    click = Instance.new("Sound"),
-    hover = Instance.new("Sound"),
-    toggle = Instance.new("Sound")
-}
+-- Store player name when script starts
+local storedPlayerName = player.Name
+local TpCompletedS = false
 
-sounds.click.SoundId = "rbxasset://sounds/button_press.mp3"
-sounds.click.Volume = 0.5
-sounds.click.Parent = soundService
+local function freezeCharacterAtPosition(char, position, freezeTime)
+    freezeTime = freezeTime or 1
+    
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Anchored = true
+        end
+    end
+    
+    if char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = position
+    end
+    
+    local conn
+    conn = runService.RenderStepped:Connect(function()
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = position
+        else
+            conn:Disconnect()
+        end
+    end)
+    
+    wait(freezeTime)
+    
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Anchored = false
+        end
+    end
+    
+    if conn then conn:Disconnect() end
+end
 
-sounds.hover.SoundId = "rbxasset://sounds/button_hover.mp3" 
-sounds.hover.Volume = 0.3
-sounds.hover.Parent = soundService
-
-sounds.toggle.SoundId = "rbxasset://sounds/toggle_on.mp3"
-sounds.toggle.Volume = 0.4
-sounds.toggle.Parent = soundService
-
-local function playSound(soundName)
-    if sounds[soundName] then
-        sounds[soundName]:Play()
+-- Function to find and teleport to player's base
+local function teleportToBase()
+    TpCompletedS = false
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then
+        warn("Character or HumanoidRootPart not found")
+        return
+    end
+    
+    -- Search for BillboardGui objects named "YourBase"
+    local foundBase = nil
+    local function searchInDescendants(parent)
+        for _, descendant in ipairs(parent:GetDescendants()) do
+            if descendant:IsA("BillboardGui") and descendant.Name == "YourBase" then
+                -- Check if this BillboardGui contains the player's name
+                for _, child in ipairs(descendant:GetDescendants()) do
+                    if child:IsA("TextLabel") and string.find(child.Text, storedPlayerName) then
+                        foundBase = descendant
+                        return true
+                    end
+                end
+            end
+        end
+        return false
+    end
+    
+    -- Search in workspace
+    if searchInDescendants(game.Workspace) and foundBase then
+        -- Get the position of the BillboardGui's parent (should be a part)
+        local parentPart = foundBase.Parent
+        if parentPart and parentPart:IsA("BasePart") then
+            local teleportPosition = parentPart.CFrame + Vector3.new(0, 5, 0) -- Teleport slightly above
+            
+            -- Teleport and freeze character
+            spawn(function()
+                freezeCharacterAtPosition(char, teleportPosition, 1)
+                TpCompletedS = true
+                print("Teleported to base successfully!")
+            end)
+        else
+            warn("BillboardGui parent is not a valid part")
+        end
+    else
+        warn("Could not find YourBase for player: " .. storedPlayerName)
     end
 end
 
-local function stealthTeleport(char, targetPosition)
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    
-    local hrp = char.HumanoidRootPart
-    local originalPos = hrp.CFrame
-    local direction = (targetPosition.Position - originalPos.Position).Unit
-    local distance = (targetPosition.Position - originalPos.Position).Magnitude
-    
-    local steps = math.max(8, math.ceil(distance / 1.5))
-    
-    spawn(function()
-        for i = 1, steps do
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                local stepPos = originalPos.Position + (direction * ((distance / steps) * i))
-                hrp.CFrame = CFrame.new(stepPos, stepPos + direction)
-                runService.Heartbeat:Wait()
-                runService.Heartbeat:Wait()
-                runService.Heartbeat:Wait()
-            end
-        end
-        
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            hrp.CFrame = targetPosition
-        end
-    end)
-end
-
+-- Create GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
-screenGui.Parent = game:GetService("CoreGui")
-screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local mainButton = Instance.new("ImageButton")
 mainButton.Name = "MainButton"
@@ -73,76 +100,33 @@ mainButton.Size = UDim2.new(0, 70, 0, 70)
 mainButton.Position = UDim2.new(0.1, 0, 0.1, 0)
 mainButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 mainButton.BorderSizePixel = 2
-mainButton.BorderColor3 = Color3.fromRGB(255, 0, 0)
+mainButton.BorderColor3 = Color3.fromRGB(255,0,0)
 mainButton.Image = imageId
 mainButton.Parent = screenGui
 mainButton.Draggable = true
 
-local mainButtonGradient = Instance.new("UIGradient")
-mainButtonGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 51, 51)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 102, 102)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 51, 51))
-}
-mainButtonGradient.Rotation = 45
-mainButtonGradient.Parent = mainButton
-
-local mainButtonCorner = Instance.new("UICorner")
-mainButtonCorner.CornerRadius = UDim.new(0, 12)
-mainButtonCorner.Parent = mainButton
-
 local modMenu = Instance.new("Frame")
 modMenu.Name = "ModMenu"
-modMenu.Size = UDim2.new(0, 280, 0, 350)
+modMenu.Size = UDim2.new(0, 250, 0, 320)
 modMenu.Position = UDim2.new(0.1, 80, 0.1, 0)
 modMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 modMenu.BorderSizePixel = 2
-modMenu.BorderColor3 = Color3.fromRGB(255, 0, 0)
+modMenu.BorderColor3 = Color3.fromRGB(255,0,0)
 modMenu.Visible = false
 modMenu.Parent = screenGui
 
-local menuGradient = Instance.new("UIGradient")
-menuGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(26, 26, 26)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(45, 45, 45)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(26, 26, 26))
-}
-menuGradient.Rotation = 135
-menuGradient.Parent = modMenu
-
-local menuCorner = Instance.new("UICorner")
-menuCorner.CornerRadius = UDim.new(0, 15)
-menuCorner.Parent = modMenu
-
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 50)
-title.BackgroundTransparency = 0
-title.BackgroundColor3 = Color3.fromRGB(255, 51, 51)
-title.Text = "🎮 MOD MENU"
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.Text = "MOD MENU"
 title.Font = Enum.Font.GothamBold
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.TextSize = 24
+title.TextColor3 = Color3.fromRGB(255,0,0)
+title.TextSize = 28
 title.Parent = modMenu
 
-local titleGradient = Instance.new("UIGradient")
-titleGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 0, 0))
-}
-titleGradient.Rotation = 90
-titleGradient.Parent = title
-
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 15)
-titleCorner.Parent = title
-
+-- Make modMenu draggable
 local dragging = false
 local dragInput, dragStart, startPos
-
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    modMenu.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
 
 modMenu.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -159,18 +143,14 @@ modMenu.InputBegan:Connect(function(input)
 end)
 
 modMenu.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        modMenu.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 
-userInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        updateDrag(input)
-    end
-end)
-
-local function createToggle(name, ypos, icon)
+-- Function to create toggle buttons
+local function createToggle(name, ypos)
     local frame = Instance.new("Frame")
     frame.BackgroundTransparency = 1
     frame.Size = UDim2.new(1, -20, 0, 45)
@@ -179,347 +159,169 @@ local function createToggle(name, ypos, icon)
     
     local button = Instance.new("TextButton")
     button.Name = name.."Button"
-    button.Size = UDim2.new(0.7, -5, 1, 0)
+    button.Size = UDim2.new(0.7, 0, 1, 0)
     button.Position = UDim2.new(0, 0, 0, 0)
-    button.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.BackgroundColor3 = Color3.fromRGB(40,0,0)
+    button.TextColor3 = Color3.fromRGB(255,255,255)
     button.Font = Enum.Font.Gotham
-    button.Text = icon.." "..name
-    button.TextSize = 18
+    button.Text = name
+    button.TextSize = 20
     button.Parent = frame
-    
-    local buttonGradient = Instance.new("UIGradient")
-    buttonGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(42, 0, 0)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(77, 0, 0)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(42, 0, 0))
-    }
-    buttonGradient.Rotation = 135
-    buttonGradient.Parent = button
-    
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 8)
-    buttonCorner.Parent = button
     
     local toggle = Instance.new("TextLabel")
     toggle.Name = "Toggle"
     toggle.Size = UDim2.new(0.3, 0, 1, 0)
-    toggle.Position = UDim2.new(0.7, 5, 0, 0)
-    toggle.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
-    toggle.TextColor3 = Color3.fromRGB(255, 0, 0) 
+    toggle.Position = UDim2.new(0.7, 0, 0, 0)
+    toggle.BackgroundColor3 = Color3.fromRGB(60,0,0)
+    toggle.TextColor3 = Color3.fromRGB(255,0,0)
     toggle.Font = Enum.Font.GothamBold
     toggle.Text = "OFF"
-    toggle.TextSize = 16
+    toggle.TextSize = 18
     toggle.Parent = frame
-    
-    local toggleGradient = Instance.new("UIGradient")
-    toggleGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 0, 0)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(90, 0, 0))
-    }
-    toggleGradient.Rotation = 90
-    toggleGradient.Parent = toggle
-    
-    local toggleCorner = Instance.new("UICorner")
-    toggleCorner.CornerRadius = UDim.new(0, 8)
-    toggleCorner.Parent = toggle
-    
-    button.MouseEnter:Connect(function()
-        playSound("hover")
-        button.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
-    end)
-    
-    button.MouseLeave:Connect(function()
-        button.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
-    end)
     
     return button, toggle
 end
 
-local y = 60
+-- Create buttons (removed TP Wall and TP UP, added TP BASE)
+local y = 50
 local buttons = {}
 
-buttons.TPWall, buttons.TPWallToggle = createToggle("TP Wall", y, "🚀")
-buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y+50, "⚡")
-buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+100, "🦘")
-buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y+150, "🎯")
-buttons.TPUP, buttons.TPUPToggle = createToggle("TP UP", y+200, "🚀")
+buttons.TPBase, buttons.TPBaseToggle = createToggle("TP BASE", y)
+buttons.Speed, buttons.SpeedToggle = createToggle("Speed Boost", y+50)
+buttons.Jump, buttons.JumpToggle = createToggle("Jump Boost", y+100)
+buttons.AutoHit, buttons.AutoHitToggle = createToggle("Auto Hit", y+150)
 
+-- Toggle states
 local toggles = {
-    TPWall = false,
+    TPBase = false,
     Speed = false,
     Jump = false,
     AutoHit = false,
-    TPUP = false,
 }
 
 local connections = {}
 
-mainButton.MouseButton1Click:Connect(function()
-    playSound("click")
-    modMenu.Visible = not modMenu.Visible
-end)
+-- Noclip functionality (used for some features)
+local noclipActive = false
+local noclipConnection = nil
 
-userInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.F1 then
-        modMenu.Visible = not modMenu.Visible
-        playSound("click")
-    end
-end)
-
-buttons.TPWall.MouseButton1Click:Connect(function()
-    playSound("click")
-    toggles.TPWall = not toggles.TPWall
-    buttons.TPWallToggle.Text = toggles.TPWall and "ON" or "OFF"
-    buttons.TPWallToggle.TextColor3 = toggles.TPWall and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+local function setNoclip(active)
+    if noclipActive == active then return end
+    noclipActive = active
     
-    if toggles.TPWall then
-        playSound("toggle")
-        local tpGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-        tpGui.Name = "TPWallGui"
-        
-        local tpButton = Instance.new("TextButton", tpGui)
-        tpButton.Size = UDim2.new(0, 100, 0, 40)
-        tpButton.Position = UDim2.new(0.5, -50, 0.7, 0)
-        tpButton.BackgroundColor3 = Color3.fromRGB(255, 51, 51)
-        tpButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        tpButton.Font = Enum.Font.GothamBold
-        tpButton.Text = "🚀 TP WALL"
-        tpButton.TextSize = 16
-        
-        local tpCorner = Instance.new("UICorner")
-        tpCorner.CornerRadius = UDim.new(0, 10)
-        tpCorner.Parent = tpButton
-        
-        local tpGradient = Instance.new("UIGradient")
-        tpGradient.Color = ColorSequence.new{
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 51, 51)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 0, 0))
-        }
-        tpGradient.Parent = tpButton
-        
-        local function tpForward()
+    if noclipActive then
+        noclipConnection = runService.Stepped:Connect(function()
             local char = player.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                local hrp = char.HumanoidRootPart
-                local targetPos = hrp.CFrame + hrp.CFrame.LookVector * 8
-                stealthTeleport(char, targetPos)
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide == true then
+                        part.CanCollide = false
+                    end
+                end
             end
-        end
-        
-        connections.tpw = tpButton.MouseButton1Click:Connect(function()
-            playSound("click")
-            tpForward()
         end)
     else
-        if game:GetService("CoreGui"):FindFirstChild("TPWallGui") then
-            game:GetService("CoreGui").TPWallGui:Destroy()
+        if noclipConnection then noclipConnection:Disconnect() end
+        local char = player.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
         end
-        if connections.tpw then
-            connections.tpw:Disconnect()
-            connections.tpw = nil
-        end
+    end
+end
+
+-- Button click handlers
+buttons.TPBase.MouseButton1Click:Connect(function()
+    toggles.TPBase = not toggles.TPBase
+    buttons.TPBaseToggle.Text = toggles.TPBase and "ON" or "OFF"
+    buttons.TPBaseToggle.TextColor3 = toggles.TPBase and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+    
+    if toggles.TPBase then
+        teleportToBase()
+        -- Auto turn off after teleport
+        wait(0.1)
+        toggles.TPBase = false
+        buttons.TPBaseToggle.Text = "OFF"
+        buttons.TPBaseToggle.TextColor3 = Color3.fromRGB(255,0,0)
     end
 end)
 
-local speedConnection
-local bodyVelocity
-
 buttons.Speed.MouseButton1Click:Connect(function()
-    playSound("click")
     toggles.Speed = not toggles.Speed
     buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
     buttons.SpeedToggle.TextColor3 = toggles.Speed and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
     
-    if toggles.Speed then
-        playSound("toggle")
-        speedConnection = runService.Heartbeat:Connect(function()
-            local char = player.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                local hrp = char.HumanoidRootPart
-                local humanoid = char:FindFirstChildOfClass("Humanoid")
-                
-                if humanoid and humanoid.MoveDirection.Magnitude > 0 then
-                    if not bodyVelocity then
-                        bodyVelocity = Instance.new("BodyVelocity")
-                        bodyVelocity.MaxForce = Vector3.new(4000, 0, 4000)
-                        bodyVelocity.Parent = hrp
-                    end
-                    
-                    local moveVector = humanoid.MoveDirection * 55
-                    bodyVelocity.Velocity = Vector3.new(moveVector.X, hrp.Velocity.Y, moveVector.Z)
-                else
-                    if bodyVelocity then
-                        bodyVelocity:Destroy()
-                        bodyVelocity = nil
-                    end
-                end
-            end
-        end)
-    else
-        if speedConnection then
-            speedConnection:Disconnect()
-            speedConnection = nil
-        end
-        if bodyVelocity then
-            bodyVelocity:Destroy()
-            bodyVelocity = nil
+    local char = player.Character
+    if char and char:FindFirstChild("Humanoid") then
+        if toggles.Speed then
+            char.Humanoid.WalkSpeed = 50
+        else
+            char.Humanoid.WalkSpeed = 16
         end
     end
 end)
 
-local jumpConnection
-local originalJumpPower
-
 buttons.Jump.MouseButton1Click:Connect(function()
-    playSound("click")
     toggles.Jump = not toggles.Jump
     buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
     buttons.JumpToggle.TextColor3 = toggles.Jump and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
     
-    if toggles.Jump then
-        playSound("toggle")
-        jumpConnection = runService.Heartbeat:Connect(function()
-            local char = player.Character
-            if char then
-                local humanoid = char:FindFirstChildOfClass("Humanoid")
-                if humanoid then
-                    if not originalJumpPower then
-                        originalJumpPower = humanoid.JumpPower or 50
-                    end
-                    
-                    humanoid.JumpPower = 120
-                    
-                    if humanoid.Jump then
-                        local bodyVelocity = char.HumanoidRootPart:FindFirstChild("JumpBoost")
-                        if not bodyVelocity then
-                            bodyVelocity = Instance.new("BodyVelocity")
-                            bodyVelocity.Name = "JumpBoost"
-                            bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
-                            bodyVelocity.Velocity = Vector3.new(0, 70, 0)
-                            bodyVelocity.Parent = char.HumanoidRootPart
-                            
-                            spawn(function()
-                                wait(0.4)
-                                if bodyVelocity and bodyVelocity.Parent then
-                                    bodyVelocity:Destroy()
-                                end
-                            end)
-                        end
-                    end
-                end
-            end
-        end)
-    else
-        if jumpConnection then
-            jumpConnection:Disconnect()
-            jumpConnection = nil
-        end
-        
-        local char = player.Character
-        if char then
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            if humanoid and originalJumpPower then
-                humanoid.JumpPower = originalJumpPower
-            end
-            
-            local jumpBoost = char.HumanoidRootPart:FindFirstChild("JumpBoost")
-            if jumpBoost then
-                jumpBoost:Destroy()
-            end
+    local char = player.Character
+    if char and char:FindFirstChild("Humanoid") then
+        if toggles.Jump then
+            char.Humanoid.JumpPower = 100
+        else
+            char.Humanoid.JumpPower = 50
         end
     end
 end)
 
-local autoHitConnection
-
 buttons.AutoHit.MouseButton1Click:Connect(function()
-    playSound("click")
     toggles.AutoHit = not toggles.AutoHit
     buttons.AutoHitToggle.Text = toggles.AutoHit and "ON" or "OFF"
     buttons.AutoHitToggle.TextColor3 = toggles.AutoHit and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
     
+    if connections.AutoHit then
+        connections.AutoHit:Disconnect()
+        connections.AutoHit = nil
+    end
+    
     if toggles.AutoHit then
-        playSound("toggle")
-        autoHitConnection = runService.Heartbeat:Connect(function()
-            local char = player.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                local tool = char:FindFirstChildOfClass("Tool")
-                if tool and tool.Name == toolName then
-                    for _, otherPlayer in pairs(game.Players:GetPlayers()) do
-                        if otherPlayer ~= player and otherPlayer.Character then
-                            local otherHrp = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
-                            if otherHrp then
-                                local distance = (char.HumanoidRootPart.Position - otherHrp.Position).Magnitude
-                                if distance <= 25 then
-                                    tool:Activate()
-                                    break
-                                end
-                            end
-                        end
-                    end
+        connections.AutoHit = runService.RenderStepped:Connect(function()
+            -- Auto hit logic - simulate mouse click
+            if mouse.Target and mouse.Target.Parent:FindFirstChild("Humanoid") then
+                -- Simulate tool activation or hit
+                local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+                if tool and tool:FindFirstChild("Handle") then
+                    tool:Activate()
                 end
             end
         end)
-    else
-        if autoHitConnection then
-            autoHitConnection:Disconnect()
-            autoHitConnection = nil
-        end
     end
 end)
 
-local tpUpConnection
-
-buttons.TPUP.MouseButton1Click:Connect(function()
-    playSound("click")
-    toggles.TPUP = not toggles.TPUP
-    buttons.TPUPToggle.Text = toggles.TPUP and "ON" or "OFF"
-    buttons.TPUPToggle.TextColor3 = toggles.TPUP and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-    
-    if toggles.TPUP then
-        playSound("toggle")
-        local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            local hrp = char.HumanoidRootPart
-            local newPos = hrp.CFrame + Vector3.new(0, baseY, 0)
-            stealthTeleport(char, newPos)
-        end
-    end
+-- Main button toggle
+mainButton.MouseButton1Click:Connect(function()
+    modMenu.Visible = not modMenu.Visible
 end)
 
-local function resetConnections()
-    if speedConnection then
-        speedConnection:Disconnect()
-        speedConnection = nil
-    end
-    if bodyVelocity then
-        bodyVelocity:Destroy()
-        bodyVelocity = nil
-    end
-    if jumpConnection then
-        jumpConnection:Disconnect()
-        jumpConnection = nil
-    end
-    if autoHitConnection then
-        autoHitConnection:Disconnect()
-        autoHitConnection = nil
-    end
-    originalJumpPower = nil
-end
-
-player.CharacterAdded:Connect(function()
-    wait(1)
-    resetConnections()
-    
-    for feature, state in pairs(toggles) do
-        if state then
-            toggles[feature] = false
-            if buttons[feature.."Toggle"] then
-                buttons[feature.."Toggle"].Text = "OFF"
-                buttons[feature.."Toggle"].TextColor3 = Color3.fromRGB(255,0,0)
+-- Clean up on player leaving
+game.Players.PlayerRemoving:Connect(function(leavingPlayer)
+    if leavingPlayer == player then
+        for _, connection in pairs(connections) do
+            if connection then
+                connection:Disconnect()
             end
         end
+        if noclipConnection then
+            noclipConnection:Disconnect()
+        end
     end
 end)
+
+print("Mod menu loaded successfully!")
+print("Stored player name: " .. storedPlayerName)
+print("TpCompletedS initialized as: " .. tostring(TpCompletedS))
