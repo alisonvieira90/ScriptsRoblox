@@ -51,16 +51,30 @@ local function teleportToBase()
         return
     end
     
-    -- Search for BillboardGui objects named "YourBase"
+    -- Search for SurfaceGui objects inside PlotSign models
     local foundBase = nil
     local function searchInDescendants(parent)
         for _, descendant in ipairs(parent:GetDescendants()) do
-            if descendant:IsA("BillboardGui") and descendant.Name == "YourBase" then
-                -- Check if this BillboardGui contains the player's name
-                for _, child in ipairs(descendant:GetDescendants()) do
-                    if child:IsA("TextLabel") and string.find(child.Text, storedPlayerName) then
-                        foundBase = descendant
-                        return true
+            -- Look for models that contain PlotSign
+            if descendant:IsA("Model") then
+                local plotSign = descendant:FindFirstChild("PlotSign")
+                if plotSign then
+                    -- Look for SurfaceGui inside PlotSign
+                    local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
+                    if surfaceGui then
+                        -- Check TextLabel inside SurfaceGui
+                        for _, child in ipairs(surfaceGui:GetDescendants()) do
+                            if child:IsA("TextLabel") then
+                                local text = child.Text
+                                local expectedText = storedPlayerName .. "'s Base"
+                                
+                                -- Check if text matches exactly: "PlayerName's Base"
+                                if text == expectedText then
+                                    foundBase = plotSign
+                                    return true
+                                end
+                            end
+                        end
                     end
                 end
             end
@@ -70,10 +84,9 @@ local function teleportToBase()
     
     -- Search in workspace
     if searchInDescendants(game.Workspace) and foundBase then
-        -- Get the position of the BillboardGui's parent (should be a part)
-        local parentPart = foundBase.Parent
-        if parentPart and parentPart:IsA("BasePart") then
-            local teleportPosition = parentPart.CFrame + Vector3.new(0, 5, 0) -- Teleport slightly above
+        -- Get the position of the PlotSign (should be a part)
+        if foundBase:IsA("BasePart") then
+            local teleportPosition = foundBase.CFrame + Vector3.new(0, 5, 0) -- Teleport slightly above
             
             -- Teleport and freeze character
             spawn(function()
@@ -82,10 +95,11 @@ local function teleportToBase()
                 print("Teleported to base successfully!")
             end)
         else
-            warn("BillboardGui parent is not a valid part")
+            warn("PlotSign is not a valid part")
         end
     else
-        warn("Could not find YourBase for player: " .. storedPlayerName)
+        warn("Could not find base for player: " .. storedPlayerName)
+        print("Looking for text: " .. storedPlayerName .. "'s Base")
     end
 end
 
