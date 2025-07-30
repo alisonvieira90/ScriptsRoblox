@@ -125,8 +125,6 @@ local toggles = {
     AutoHit = false,
 }
 
-local connections = {}
-
 local noclipActive = false
 local noclipConnection = nil
 
@@ -191,9 +189,7 @@ local function teleportToBase()
                         if char and char:FindFirstChild("HumanoidRootPart") then
                             local targetPosition = plotSign.CFrame.Position + Vector3.new(0, -18, 0)
                             char.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
-                            IFtpc = true
                             freezeCharacter(char, 1)
-                            IFtpc = false
                         end
                         break
                     end
@@ -203,13 +199,11 @@ local function teleportToBase()
     end
 end
 
-buttons.TPBASE.MouseButton1Click:Connect(function()
-    teleportToBase()
-end)
+buttons.TPBASE.MouseButton1Click:Connect(teleportToBase)
 
 mainButton.MouseButton1Click:Connect(function()
     if modMenu.Visible then
-        local shrinkTween = tweenService:Create(modMenu, TweenInfo.new(0.35, Enum.EasingStyle.Exponential, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0)})
+        local shrinkTween = tweenService:Create(modMenu, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
         shrinkTween:Play()
         shrinkTween.Completed:Wait()
         modMenu.Visible = false
@@ -217,76 +211,56 @@ mainButton.MouseButton1Click:Connect(function()
     else
         modMenu.Visible = true
         modMenu.Size = UDim2.new(0, 0, 0, 0)
-        local growTween = tweenService:Create(modMenu, TweenInfo.new(0.35, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = UDim2.new(0,250,0,320)})
+        local growTween = tweenService:Create(modMenu, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 250, 0, 320)})
         growTween:Play()
     end
 end)
 
--- Jump Boost (impulso vertical, sem JumpPower)
-local jumpBoostMultiplier = 6 -- pulo alto, estável
+-- Jump Boost (impulso vertical, sem usar JumpPower)
+local jumpBoostMultiplier = 6
 
 local function onJumpRequest()
     if toggles.Jump then
         local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.Velocity += Vector3.new(0, char.Humanoid.JumpPower * (jumpBoostMultiplier-1), 0)
+        if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
+            local hrp = char.HumanoidRootPart
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            hrp.Velocity = Vector3.new(hrp.Velocity.X, hum.JumpPower * jumpBoostMultiplier, hrp.Velocity.Z)
         end
     end
 end
+
+uis.JumpRequest:Connect(onJumpRequest)
 
 buttons.Jump.MouseButton1Click:Connect(function()
     toggles.Jump = not toggles.Jump
     buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
 end)
 
-uis.JumpRequest:Connect(onJumpRequest)
+-- Speed Boost (usando Velocity na HumanoidRootPart)
+local speedActive = false
+local speedForce = 60
 
--- Speed Boost (WalkSpeed alternativo: incrementa pouco e reseta)
-local speedBoostActive = false
-local originalSpeed = nil
-local speedCoroutine = nil
-
-local function enableSpeedBoost()
-    local char = player.Character
-    if not char then return end
-    local humanoid = char:FindFirstChildWhichIsA("Humanoid")
-    if not humanoid then return end
-
-    if not originalSpeed then
-        originalSpeed = humanoid.WalkSpeed
-    end
-    speedBoostActive = true
-
-    speedCoroutine = coroutine.create(function()
-        while speedBoostActive do
-            -- Pequeno incremento, menos detectável
-            humanoid.WalkSpeed = originalSpeed + 2.5
-            wait(0.2)
-            humanoid.WalkSpeed = originalSpeed
-            wait(0.15)
+local function speedStep()
+    if speedActive then
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
+            local hrp = char.HumanoidRootPart
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local move = hum.MoveDirection
+            if move.Magnitude > 0 then
+                hrp.Velocity = Vector3.new(move.X * speedForce, hrp.Velocity.Y, move.Z * speedForce)
+            end
         end
-    end)
-    coroutine.resume(speedCoroutine)
-end
-
-local function disableSpeedBoost()
-    speedBoostActive = false
-    local char = player.Character
-    if not char then return end
-    local humanoid = char:FindFirstChildWhichIsA("Humanoid")
-    if humanoid and originalSpeed then
-        humanoid.WalkSpeed = originalSpeed
     end
 end
+
+runService.Heartbeat:Connect(speedStep)
 
 buttons.Speed.MouseButton1Click:Connect(function()
     toggles.Speed = not toggles.Speed
     buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
-    if toggles.Speed then
-        enableSpeedBoost()
-    else
-        disableSpeedBoost()
-    end
+    speedActive = toggles.Speed
 end)
 
 -- Auto Hit
