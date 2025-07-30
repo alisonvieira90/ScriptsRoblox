@@ -216,7 +216,7 @@ mainButton.MouseButton1Click:Connect(function()
     end
 end)
 
-llocal jumpBoostPower = 50 -- você pode ajustar aqui, 50 ou 60 já devem ficar legais
+local jumpBoostPower = 50 -- você pode ajustar aqui, 50 ou 60 já devem ficar legais
 
 local function onHumanoidStateChanged(oldState, newState)
     if toggles.Jump and newState == Enum.HumanoidStateType.Jumping then
