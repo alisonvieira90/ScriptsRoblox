@@ -216,18 +216,33 @@ mainButton.MouseButton1Click:Connect(function()
     end
 end)
 
-local jumpBoostPower = 50 -- você pode ajustar aqui, 50 ou 60 já devem ficar legais
+local jumpBoostPower = 50
 
-local function onHumanoidStateChanged(oldState, newState)
-    if toggles.Jump and newState == Enum.HumanoidStateType.Jumping then
+local function onHumanoidJumping(active)
+    if toggles.Jump and active then
         local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
+        if char and char:FindFirstChild("HumanoidRootPart") then
             local hrp = char.HumanoidRootPart
-            -- Somar ao velocity, não sobrescrever
-            hrp.Velocity = hrp.Velocity + Vector3.new(0, jumpBoostPower, 0)
+            -- Espera 0.05 segundos para o pulo começar e então aplica impulso
+            task.delay(0.05, function()
+                hrp.Velocity = Vector3.new(hrp.Velocity.X, jumpBoostPower, hrp.Velocity.Z)
+            end)
         end
     end
 end
+
+local function setupJumpBoost()
+    local char = player.Character
+    if not char then return end
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+
+    humanoid.Jumping:Connect(onHumanoidJumping)
+end
+
+player.CharacterAdded:Connect(setupJumpBoost)
+setupJumpBoost()
+
 
 
 local function setupJumpBoost()
