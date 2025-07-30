@@ -219,6 +219,9 @@ end)
 local originalJumpPower = nil
 local jumpBoostPower = 100 -- você pode ajustar esse valor para controlar o quanto quer pular a mais
 
+local function onHumanoidStateChanged() end
+local function onHumanoidJumping() end
+
 local function onJumpRequest()
     if toggles.Jump then
         local char = player.Character
