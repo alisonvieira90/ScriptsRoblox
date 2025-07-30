@@ -216,7 +216,7 @@ mainButton.MouseButton1Click:Connect(function()
     end
 end)
 
-local jumpBoostPower = 100 -- você pode ajustar esse valor para controlar o quanto quer pular a mais
+local jumpBoostPower = 50 -- você pode ajustar esse valor para controlar o quanto quer pular a mais
 
 local function onJumpRequest()
     if toggles.Jump then
