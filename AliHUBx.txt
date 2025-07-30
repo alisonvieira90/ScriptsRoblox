@@ -217,31 +217,17 @@ mainButton.MouseButton1Click:Connect(function()
 end)
 
 local originalJumpPower = nil
-local jumpBoostPower = 90
+local jumpBoostMultiplier = 6 -- pulo alto, estável
 
-local function onHumanoidStateChanged(oldState, newState)
-    local char = player.Character
-    if not char then return end
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-
+local function onJumpRequest()
     if toggles.Jump then
-        if newState == Enum.HumanoidStateType.Jumping then
-            if not originalJumpPower then
-                originalJumpPower = humanoid.JumpPower
-            end
-            humanoid.JumpPower = jumpBoostPower
-        elseif newState == Enum.HumanoidStateType.Landed then
-            if originalJumpPower then
-                humanoid.JumpPower = originalJumpPower
-            end
-        end
-    else
-        if originalJumpPower then
-            humanoid.JumpPower = originalJumpPower
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.Velocity += Vector3.new(0, char.Humanoid.JumpPower * (jumpBoostMultiplier-1), 0)
         end
     end
 end
+
 
 local function setupJumpBoost()
     local char = player.Character
