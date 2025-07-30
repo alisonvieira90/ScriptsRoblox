@@ -222,49 +222,56 @@ mainButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Alternative Speed Boost (without WalkSpeed)
-local speedBoostActive = false
-local speedConnection = nil
-local movementVector = Vector3.new()
-local speedMultiplier = 2.5 -- You can adjust this
+-- Speed Boost (BodyMover method, safer for anti-cheat)
+local speedBoostEnabled = false
+local linearVelocity
 
-local function onInput(input, gameProcessed)
-    if toggles.Speed and input.UserInputType == Enum.UserInputType.Keyboard then
-        if input.KeyCode == Enum.KeyCode.W then movementVector = movementVector + Vector3.new(0,0,-1)
-        elseif input.KeyCode == Enum.KeyCode.S then movementVector = movementVector + Vector3.new(0,0,1)
-        elseif input.KeyCode == Enum.KeyCode.A then movementVector = movementVector + Vector3.new(-1,0,0)
-        elseif input.KeyCode == Enum.KeyCode.D then movementVector = movementVector + Vector3.new(1,0,0)
-        end
+function enableSpeedBoost()
+    speedBoostEnabled = true
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local att = hrp:FindFirstChild("SpeedAtt")
+    if not att then
+        att = Instance.new("Attachment", hrp)
+        att.Name = "SpeedAtt"
     end
-end
 
-local function onInputEnded(input, gameProcessed)
-    if toggles.Speed and input.UserInputType == Enum.UserInputType.Keyboard then
-        if input.KeyCode == Enum.KeyCode.W then movementVector = movementVector - Vector3.new(0,0,-1)
-        elseif input.KeyCode == Enum.KeyCode.S then movementVector = movementVector - Vector3.new(0,0,1)
-        elseif input.KeyCode == Enum.KeyCode.A then movementVector = movementVector - Vector3.new(-1,0,0)
-        elseif input.KeyCode == Enum.KeyCode.D then movementVector = movementVector - Vector3.new(1,0,0)
-        end
-    end
-end
+    linearVelocity = hrp:FindFirstChild("SpeedBoost") or Instance.new("LinearVelocity")
+    linearVelocity.Name = "SpeedBoost"
+    linearVelocity.Attachment0 = att
+    linearVelocity.Parent = hrp
+    linearVelocity.MaxForce = 5000
+    linearVelocity.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
 
-local function enableSpeedBoost()
-    if speedConnection then speedConnection:Disconnect() end
-    speedConnection = runService.RenderStepped:Connect(function()
-        local char = player.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-        if movementVector.Magnitude > 0 then
-            local moveDir = movementVector.Unit
-            char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame + moveDir * speedMultiplier
+    local updateDir
+    updateDir = runService.RenderStepped:Connect(function()
+        if speedBoostEnabled and hrp and player.Character and player.Character:FindFirstChild("Humanoid") then
+            linearVelocity.VectorVelocity = hrp.CFrame.LookVector * 13
+        else
+            linearVelocity.VectorVelocity = Vector3.new(0,0,0)
         end
     end)
-    uis.InputBegan:Connect(onInput)
-    uis.InputEnded:Connect(onInputEnded)
+    connections.Speed = updateDir
 end
 
-local function disableSpeedBoost()
-    if speedConnection then speedConnection:Disconnect() end
-    movementVector = Vector3.new()
+function disableSpeedBoost()
+    speedBoostEnabled = false
+    if linearVelocity then
+        linearVelocity:Destroy()
+        linearVelocity = nil
+    end
+    if connections.Speed then
+        connections.Speed:Disconnect()
+        connections.Speed = nil
+    end
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local att = char.HumanoidRootPart:FindFirstChild("SpeedAtt")
+        if att then att:Destroy() end
+    end
 end
 
 buttons.Speed.MouseButton1Click:Connect(function()
@@ -277,39 +284,25 @@ buttons.Speed.MouseButton1Click:Connect(function()
     end
 end)
 
--- Jump Boost (stable, not just JumpPower)
+-- Jump Boost (impulso vertical, sem JumpPower)
 local jumpBoostActive = false
-local jumpBoostMultiplier = 2.8 -- You can adjust this
+local jumpBoostMultiplier = 2.2
 
-local function enableJumpBoost()
-    if not jumpBoostActive then
-        jumpBoostActive = true
+local function onJumpRequest()
+    if toggles.Jump then
         local char = player.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.StateChanged:Connect(function(old, new)
-                if toggles.Jump and new == Enum.HumanoidStateType.Jumping then
-                    if char:FindFirstChild("HumanoidRootPart") then
-                        char.HumanoidRootPart.Velocity = char.HumanoidRootPart.Velocity + Vector3.new(0, char.Humanoid.JumpPower * (jumpBoostMultiplier-1), 0)
-                    end
-                end
-            end)
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.Velocity = char.HumanoidRootPart.Velocity + Vector3.new(0, char.Humanoid.JumpPower * (jumpBoostMultiplier-1), 0)
         end
     end
-end
-
-local function disableJumpBoost()
-    jumpBoostActive = false
 end
 
 buttons.Jump.MouseButton1Click:Connect(function()
     toggles.Jump = not toggles.Jump
     buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
-    if toggles.Jump then
-        enableJumpBoost()
-    else
-        disableJumpBoost()
-    end
 end)
+
+uis.JumpRequest:Connect(onJumpRequest)
 
 -- Auto Hit
 local autoHitActive = false
@@ -336,8 +329,9 @@ end
 local function enableAutoHit()
     autoHitActive = true
     autoHitConnection = runService.RenderStepped:Connect(function()
-        if not toggles.AutoHit then return end
-        clickTool()
+        if toggles.AutoHit then
+            clickTool()
+        end
     end)
 end
 
