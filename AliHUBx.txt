@@ -289,7 +289,7 @@ end)
 
 -- Speed Boost (usando Velocity na HumanoidRootPart)
 local speedActive = false
-local speedForce = 40
+local speedForce = 0
 
 local function speedStep()
     if speedActive then
