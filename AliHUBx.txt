@@ -217,7 +217,7 @@ mainButton.MouseButton1Click:Connect(function()
 end)
 
 -- Jump Boost (impulso vertical, sem usar JumpPower)
-local jumpBoostMultiplier = 3
+local jumpBoostMultiplier = 1
 
 local function onJumpRequest()
     if toggles.Jump then
