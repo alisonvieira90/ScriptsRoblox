@@ -216,20 +216,45 @@ mainButton.MouseButton1Click:Connect(function()
     end
 end)
 
-local jumpBoostPower = 50
+local originalJumpPower = nil
+local jumpBoostPower = 90
 
-local function onHumanoidJumping(active)
-    if toggles.Jump and active then
-        local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            local hrp = char.HumanoidRootPart
-            -- Espera 0.05 segundos para o pulo começar e então aplica impulso
-            task.delay(0.05, function()
-                hrp.Velocity = Vector3.new(hrp.Velocity.X, jumpBoostPower, hrp.Velocity.Z)
-            end)
+local function onHumanoidStateChanged(oldState, newState)
+    local char = player.Character
+    if not char then return end
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+
+    if toggles.Jump then
+        if newState == Enum.HumanoidStateType.Jumping then
+            if not originalJumpPower then
+                originalJumpPower = humanoid.JumpPower
+            end
+            humanoid.JumpPower = jumpBoostPower
+        elseif newState == Enum.HumanoidStateType.Landed then
+            if originalJumpPower then
+                humanoid.JumpPower = originalJumpPower
+            end
+        end
+    else
+        if originalJumpPower then
+            humanoid.JumpPower = originalJumpPower
         end
     end
 end
+
+local function setupJumpBoost()
+    local char = player.Character
+    if not char then return end
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+
+    humanoid.StateChanged:Connect(onHumanoidStateChanged)
+end
+
+player.CharacterAdded:Connect(setupJumpBoost)
+setupJumpBoost()
+
 
 local function setupJumpBoost()
     local char = player.Character
