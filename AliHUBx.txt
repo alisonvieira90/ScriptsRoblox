@@ -216,8 +216,7 @@ mainButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Jump Boost (impulso vertical, sem usar JumpPower)
-local jumpBoostMultiplier = 1
+local jumpBoostPower = 100 -- você pode ajustar esse valor para controlar o quanto quer pular a mais
 
 local function onJumpRequest()
     if toggles.Jump then
@@ -225,10 +224,16 @@ local function onJumpRequest()
         if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
             local hrp = char.HumanoidRootPart
             local hum = char:FindFirstChildOfClass("Humanoid")
-            hrp.Velocity = Vector3.new(hrp.Velocity.X, hum.JumpPower * jumpBoostMultiplier, hrp.Velocity.Z)
+
+            -- Só aplica o impulso se o jogador estiver no chão (para evitar pulo duplo)
+            if hum.FloorMaterial ~= Enum.Material.Air then
+                -- Define a velocidade vertical direto, em vez de somar, pra evitar pulo exagerado
+                hrp.Velocity = Vector3.new(hrp.Velocity.X, jumpBoostPower, hrp.Velocity.Z)
+            end
         end
     end
 end
+
 
 uis.JumpRequest:Connect(onJumpRequest)
 
