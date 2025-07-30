@@ -222,55 +222,60 @@ mainButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Speed Boost (BodyMover method, safer for anti-cheat)
-local speedBoostEnabled = false
-local linearVelocity
+-- Jump Boost (impulso vertical, sem JumpPower)
+local jumpBoostMultiplier = 6 -- pulo alto, estável
 
-function enableSpeedBoost()
-    speedBoostEnabled = true
-    local char = player.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    local att = hrp:FindFirstChild("SpeedAtt")
-    if not att then
-        att = Instance.new("Attachment", hrp)
-        att.Name = "SpeedAtt"
-    end
-
-    linearVelocity = hrp:FindFirstChild("SpeedBoost") or Instance.new("LinearVelocity")
-    linearVelocity.Name = "SpeedBoost"
-    linearVelocity.Attachment0 = att
-    linearVelocity.Parent = hrp
-    linearVelocity.MaxForce = 5000
-    linearVelocity.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
-
-    local updateDir
-    updateDir = runService.RenderStepped:Connect(function()
-        if speedBoostEnabled and hrp and player.Character and player.Character:FindFirstChild("Humanoid") then
-            linearVelocity.VectorVelocity = hrp.CFrame.LookVector * 13
-        else
-            linearVelocity.VectorVelocity = Vector3.new(0,0,0)
+local function onJumpRequest()
+    if toggles.Jump then
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.Velocity += Vector3.new(0, char.Humanoid.JumpPower * (jumpBoostMultiplier-1), 0)
         end
-    end)
-    connections.Speed = updateDir
+    end
 end
 
-function disableSpeedBoost()
-    speedBoostEnabled = false
-    if linearVelocity then
-        linearVelocity:Destroy()
-        linearVelocity = nil
-    end
-    if connections.Speed then
-        connections.Speed:Disconnect()
-        connections.Speed = nil
-    end
+buttons.Jump.MouseButton1Click:Connect(function()
+    toggles.Jump = not toggles.Jump
+    buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
+end)
+
+uis.JumpRequest:Connect(onJumpRequest)
+
+-- Speed Boost (WalkSpeed alternativo: incrementa pouco e reseta)
+local speedBoostActive = false
+local originalSpeed = nil
+local speedCoroutine = nil
+
+local function enableSpeedBoost()
     local char = player.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        local att = char.HumanoidRootPart:FindFirstChild("SpeedAtt")
-        if att then att:Destroy() end
+    if not char then return end
+    local humanoid = char:FindFirstChildWhichIsA("Humanoid")
+    if not humanoid then return end
+
+    if not originalSpeed then
+        originalSpeed = humanoid.WalkSpeed
+    end
+    speedBoostActive = true
+
+    speedCoroutine = coroutine.create(function()
+        while speedBoostActive do
+            -- Pequeno incremento, menos detectável
+            humanoid.WalkSpeed = originalSpeed + 2.5
+            wait(0.2)
+            humanoid.WalkSpeed = originalSpeed
+            wait(0.15)
+        end
+    end)
+    coroutine.resume(speedCoroutine)
+end
+
+local function disableSpeedBoost()
+    speedBoostActive = false
+    local char = player.Character
+    if not char then return end
+    local humanoid = char:FindFirstChildWhichIsA("Humanoid")
+    if humanoid and originalSpeed then
+        humanoid.WalkSpeed = originalSpeed
     end
 end
 
@@ -283,26 +288,6 @@ buttons.Speed.MouseButton1Click:Connect(function()
         disableSpeedBoost()
     end
 end)
-
--- Jump Boost (impulso vertical, sem JumpPower)
-local jumpBoostActive = false
-local jumpBoostMultiplier = 2.2
-
-local function onJumpRequest()
-    if toggles.Jump then
-        local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.Velocity = char.HumanoidRootPart.Velocity + Vector3.new(0, char.Humanoid.JumpPower * (jumpBoostMultiplier-1), 0)
-        end
-    end
-end
-
-buttons.Jump.MouseButton1Click:Connect(function()
-    toggles.Jump = not toggles.Jump
-    buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
-end)
-
-uis.JumpRequest:Connect(onJumpRequest)
 
 -- Auto Hit
 local autoHitActive = false
