@@ -1,35 +1,29 @@
-print("Carregado o alixploit")
 local imageId = "rbxassetid://83777934849279"
-
 local toolName = "Tung Bat"
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local runService = game:GetService("RunService")
+local tweenService = game:GetService("TweenService")
+local uis = game:GetService("UserInputService")
 local baseY = 100
 
--- Armazenar display name ao iniciar
 local storedPlayerName = player.DisplayName
-
 local IFtpc = false
-
-local function freezeCharacter(char, freezeTime)
-    for _, part in ipairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.Anchored = true
-        end
-    end
-    wait(freezeTime or 1)
-    for _, part in ipairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.Anchored = false
-        end
-    end
-end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
 screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local function createGradient(parent)
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255,0,0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(20,20,20))
+    }
+    gradient.Rotation = 90
+    gradient.Parent = parent
+end
 
 local mainButton = Instance.new("ImageButton")
 mainButton.Name = "MainButton"
@@ -51,6 +45,7 @@ modMenu.BorderSizePixel = 2
 modMenu.BorderColor3 = Color3.fromRGB(255,0,0)
 modMenu.Visible = false
 modMenu.Parent = screenGui
+createGradient(modMenu)
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 40)
@@ -165,6 +160,20 @@ local function setNoclip(active)
     end
 end
 
+local function freezeCharacter(char, freezeTime)
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Anchored = true
+        end
+    end
+    wait(freezeTime or 1)
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Anchored = false
+        end
+    end
+end
+
 local function teleportToBase()
     local Plots = workspace:FindFirstChild("Plots")
     if not Plots then return end
@@ -180,10 +189,8 @@ local function teleportToBase()
                     if textLabel and textLabel.Text == (storedPlayerName .. "'s Base") then
                         local char = player.Character
                         if char and char:FindFirstChild("HumanoidRootPart") then
-                        local targetPosition = plotSign.CFrame.Position + Vector3.new(0, -18, 0)
-
+                            local targetPosition = plotSign.CFrame.Position + Vector3.new(0, -18, 0)
                             char.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
-
                             IFtpc = true
                             freezeCharacter(char, 1)
                             IFtpc = false
@@ -196,12 +203,158 @@ local function teleportToBase()
     end
 end
 
-
-
 buttons.TPBASE.MouseButton1Click:Connect(function()
     teleportToBase()
 end)
 
 mainButton.MouseButton1Click:Connect(function()
-    modMenu.Visible = not modMenu.Visible
+    if modMenu.Visible then
+        local shrinkTween = tweenService:Create(modMenu, TweenInfo.new(0.35, Enum.EasingStyle.Exponential, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0)})
+        shrinkTween:Play()
+        shrinkTween.Completed:Wait()
+        modMenu.Visible = false
+        modMenu.Size = UDim2.new(0, 250, 0, 320)
+    else
+        modMenu.Visible = true
+        modMenu.Size = UDim2.new(0, 0, 0, 0)
+        local growTween = tweenService:Create(modMenu, TweenInfo.new(0.35, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = UDim2.new(0,250,0,320)})
+        growTween:Play()
+    end
+end)
+
+-- Alternative Speed Boost (without WalkSpeed)
+local speedBoostActive = false
+local speedConnection = nil
+local movementVector = Vector3.new()
+local speedMultiplier = 2.5 -- You can adjust this
+
+local function onInput(input, gameProcessed)
+    if toggles.Speed and input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == Enum.KeyCode.W then movementVector = movementVector + Vector3.new(0,0,-1)
+        elseif input.KeyCode == Enum.KeyCode.S then movementVector = movementVector + Vector3.new(0,0,1)
+        elseif input.KeyCode == Enum.KeyCode.A then movementVector = movementVector + Vector3.new(-1,0,0)
+        elseif input.KeyCode == Enum.KeyCode.D then movementVector = movementVector + Vector3.new(1,0,0)
+        end
+    end
+end
+
+local function onInputEnded(input, gameProcessed)
+    if toggles.Speed and input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == Enum.KeyCode.W then movementVector = movementVector - Vector3.new(0,0,-1)
+        elseif input.KeyCode == Enum.KeyCode.S then movementVector = movementVector - Vector3.new(0,0,1)
+        elseif input.KeyCode == Enum.KeyCode.A then movementVector = movementVector - Vector3.new(-1,0,0)
+        elseif input.KeyCode == Enum.KeyCode.D then movementVector = movementVector - Vector3.new(1,0,0)
+        end
+    end
+end
+
+local function enableSpeedBoost()
+    if speedConnection then speedConnection:Disconnect() end
+    speedConnection = runService.RenderStepped:Connect(function()
+        local char = player.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+        if movementVector.Magnitude > 0 then
+            local moveDir = movementVector.Unit
+            char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame + moveDir * speedMultiplier
+        end
+    end)
+    uis.InputBegan:Connect(onInput)
+    uis.InputEnded:Connect(onInputEnded)
+end
+
+local function disableSpeedBoost()
+    if speedConnection then speedConnection:Disconnect() end
+    movementVector = Vector3.new()
+end
+
+buttons.Speed.MouseButton1Click:Connect(function()
+    toggles.Speed = not toggles.Speed
+    buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
+    if toggles.Speed then
+        enableSpeedBoost()
+    else
+        disableSpeedBoost()
+    end
+end)
+
+-- Jump Boost (stable, not just JumpPower)
+local jumpBoostActive = false
+local jumpBoostMultiplier = 2.8 -- You can adjust this
+
+local function enableJumpBoost()
+    if not jumpBoostActive then
+        jumpBoostActive = true
+        local char = player.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.StateChanged:Connect(function(old, new)
+                if toggles.Jump and new == Enum.HumanoidStateType.Jumping then
+                    if char:FindFirstChild("HumanoidRootPart") then
+                        char.HumanoidRootPart.Velocity = char.HumanoidRootPart.Velocity + Vector3.new(0, char.Humanoid.JumpPower * (jumpBoostMultiplier-1), 0)
+                    end
+                end
+            end)
+        end
+    end
+end
+
+local function disableJumpBoost()
+    jumpBoostActive = false
+end
+
+buttons.Jump.MouseButton1Click:Connect(function()
+    toggles.Jump = not toggles.Jump
+    buttons.JumpToggle.Text = toggles.Jump and "ON" or "OFF"
+    if toggles.Jump then
+        enableJumpBoost()
+    else
+        disableJumpBoost()
+    end
+end)
+
+-- Auto Hit
+local autoHitActive = false
+local autoHitConnection = nil
+
+local function equipTool()
+    local backpack = player:FindFirstChildOfClass("Backpack")
+    if backpack then
+        local tool = backpack:FindFirstChild(toolName)
+        if tool then
+            player.Character.Humanoid:EquipTool(tool)
+        end
+    end
+end
+
+local function clickTool()
+    equipTool()
+    local tool = player.Character and player.Character:FindFirstChild(toolName)
+    if tool and tool.Activate then
+        tool:Activate()
+    end
+end
+
+local function enableAutoHit()
+    autoHitActive = true
+    autoHitConnection = runService.RenderStepped:Connect(function()
+        if not toggles.AutoHit then return end
+        clickTool()
+    end)
+end
+
+local function disableAutoHit()
+    autoHitActive = false
+    if autoHitConnection then
+        autoHitConnection:Disconnect()
+        autoHitConnection = nil
+    end
+end
+
+buttons.AutoHit.MouseButton1Click:Connect(function()
+    toggles.AutoHit = not toggles.AutoHit
+    buttons.AutoHitToggle.Text = toggles.AutoHit and "ON" or "OFF"
+    if toggles.AutoHit then
+        enableAutoHit()
+    else
+        disableAutoHit()
+    end
 end)
