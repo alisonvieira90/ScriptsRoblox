@@ -291,27 +291,30 @@ end)
 local speedActive = false
 local speedForce = 0
 
-local function speedStep()
-    if speedActive then
-        local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
-            local hrp = char.HumanoidRootPart
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            local move = hum.MoveDirection
-            if move.Magnitude > 0 then
-                hrp.Velocity = Vector3.new(move.X * speedForce, hrp.Velocity.Y, move.Z * speedForce)
-            end
+local normalWalkSpeed = 16 -- padrão Roblox
+local boostedWalkSpeed = 50 -- velocidade com boost (muda o valor pra que quiser)
+
+local function updateSpeed()
+    local char = player.Character
+    if char then
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = toggles.Speed and boostedWalkSpeed or normalWalkSpeed
         end
     end
 end
 
-runService.Heartbeat:Connect(speedStep)
-
 buttons.Speed.MouseButton1Click:Connect(function()
     toggles.Speed = not toggles.Speed
     buttons.SpeedToggle.Text = toggles.Speed and "ON" or "OFF"
-    speedActive = toggles.Speed
+    updateSpeed()
 end)
+
+player.CharacterAdded:Connect(function()
+    wait(0.1)
+    updateSpeed()
+end)
+
 
 -- Auto Hit
 local autoHitActive = false
